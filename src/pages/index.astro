@@ -1,7 +1,11 @@
 ---
 /**
- * Home, deliberately a stub: the handle, one line, two links. No positioning
- * line and no project list until there is something worth putting in them.
+ * Home, deliberately a stub: the handle, one line, and the links out. No
+ * positioning line until there is one worth writing.
+ *
+ * The projects link is the only route into the case studies, which were
+ * otherwise reachable only by typing the URL. It is a link and not a list:
+ * the list lives at /projects, where it can grow without this page growing.
  */
 import Base from '../layouts/Base.astro';
 
@@ -18,6 +22,7 @@ const email = 'hello@velawind.dev';
     <h1>VelaWind</h1>
     <p class="muted">Computer science student.</p>
     <ul>
+      <li><a href="/projects">Projects</a></li>
       <li><a href="https://github.com/velawind" rel="me">github.com/velawind</a></li>
       <li><a href={`mailto:${email}`}>{email}</a></li>
     </ul>

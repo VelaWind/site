@@ -7,8 +7,14 @@ no analytics, and no client-side JavaScript on any route.
 
 | Route | What it is |
 |---|---|
-| `/` | Stub: handle, one line, two links. |
+| `/` | Stub: handle, one line, links out. |
+| `/projects` | Index of the case studies that exist. |
 | `/projects/lodestar` | Case study for [Lodestar](https://github.com/VelaWind/lodestar). |
+
+The index is generated from `src/lib/projects.ts`. Adding a project is adding an
+entry to that array, once its case study page exists: `/projects` is the only
+route that links into the case studies, so an entry without a page is a dead
+link.
 
 ## The case study body is not stored here
 

@@ -1,0 +1,34 @@
+---
+/**
+ * The case-study index: a name, a line, and a link, once per project.
+ *
+ * The list comes from src/lib/projects.ts rather than from markup here, so
+ * that a second project is one entry in one array and not an edit to this
+ * page. There is nothing else on this route by design: no cards, no grid, no
+ * images. A list of one should look like a list of one.
+ */
+import Base from '../../layouts/Base.astro';
+import { projects } from '../../lib/projects';
+---
+
+<Base
+  title="Projects · VelaWind"
+  description="Case studies for the things VelaWind has built."
+>
+  <main class="page" id="main">
+    <p class="muted"><a href="/">VelaWind</a></p>
+
+    <h1>Projects</h1>
+
+    <ul class="project-list">
+      {
+        projects.map((project) => (
+          <li>
+            <a href={project.href}>{project.name}</a>
+            <p class="muted">{project.blurb}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+</Base>

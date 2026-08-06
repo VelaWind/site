@@ -231,6 +231,28 @@ hr {
   margin: 0 0 0.5rem;
 }
 
+/* --------------------------------------------------------------- projects */
+
+/*
+ * The case-study index. Each item is a link and a line under it, so the marker
+ * is dropped: a bullet in front of a two-line entry reads as an outline rather
+ * than a list of things to click. Hover is the link colour change every link
+ * on the site already has, and nothing else.
+ */
+.project-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+
+.project-list li {
+  margin-bottom: 1.5rem;
+}
+
+.project-list p {
+  margin: 0.15rem 0 0;
+}
+
 /* ------------------------------------------------------------------- home */
 
 /*
