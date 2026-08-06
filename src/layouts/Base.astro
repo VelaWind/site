@@ -1,0 +1,48 @@
+---
+/**
+ * The shared document. Both routes use it.
+ *
+ * There is no `client:` directive anywhere in this layout or in either page, so
+ * the rendered output is HTML and CSS with no script tag of any kind.
+ */
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://velawind.dev');
+
+/*
+ * The AI-assistance disclosure, mirroring the wording on Lodestar's own About
+ * page ("Built solo, with an AI pair": decisions stay with the author, the AI
+ * drafts to that direction, and nothing ships unread).
+ */
+const aiDisclosure =
+  'Built solo in collaboration with Claude Code: the decisions stay with the ' +
+  'author, the AI drafts to that direction, and nothing ships unread.';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="color-scheme" content="light dark" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <slot />
+    <footer class="site-footer">
+      <p>{aiDisclosure}</p>
+      <p>VelaWind</p>
+    </footer>
+  </body>
+</html>

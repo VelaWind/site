@@ -1,0 +1,106 @@
+---
+/**
+ * The Lodestar case study.
+ *
+ * Two kinds of prose live on this page, and the split is deliberate:
+ *
+ *   - Everything above the provenance note is written here, because it is
+ *     framing for a portfolio reader rather than documentation for someone
+ *     cloning the repository. It is not in the README and does not belong there.
+ *   - Everything below it is fetched from the README at build time. Those words
+ *     have one home, in the repository, and this page renders them.
+ *
+ * If the fetch fails or a marker has gone, `fetchCaseStudySection` throws and
+ * this page fails to build. That is intentional; see src/lib/lodestar-readme.ts.
+ */
+import Base from '../../layouts/Base.astro';
+import { fetchCaseStudySection } from '../../lib/lodestar-readme';
+
+const { html, sourceUrl } = await fetchCaseStudySection();
+
+const repoUrl = 'https://github.com/VelaWind/lodestar';
+const liveUrl = 'https://lodestar-nu-six.vercel.app';
+---
+
+<Base
+  title="Lodestar · VelaWind"
+  description="An astrophysics education site where one text serves a reader who has never studied physics and a reader who works in the field."
+>
+  <main class="page" id="main">
+    <p class="muted"><a href="/">VelaWind</a></p>
+
+    <h1>Lodestar</h1>
+    <p class="muted">
+      Interactive astrophysics, explained in seven layers you choose to open.
+      <br />
+      <a href={liveUrl}>Live site</a> · <a href={repoUrl}>Source</a>
+    </p>
+
+    <h2>The problem</h2>
+    <p>
+      An astrophysics topic has to reach two readers who share almost no
+      vocabulary. Someone who has never studied physics needs an analogy and a
+      picture before a symbol means anything at all. Someone who works in the
+      field wants the derivation and the assumptions behind it, and stops
+      trusting a page the moment it waves a hand at something they know is
+      harder than that. Lodestar covers seven topics, and each one has to serve
+      both readers from a single page.
+    </p>
+
+    <h2>Why the obvious approach did not work</h2>
+    <p>
+      The obvious answer is two versions of every topic, a beginner page and an
+      advanced page, chosen by a toggle. Lodestar does not do that, because
+      parallel texts drift. Every correction has to be made twice, the second
+      copy is the one that gets missed, and after a few rounds of editing the
+      two versions contradict each other on the same facts. The failure is
+      quiet: nothing breaks, the pages just stop agreeing.
+    </p>
+    <p>
+      So there is one text per topic, written once, structured as seven layers
+      that run from a one-sentence hook down to the open research questions. The
+      depth setting in the header decides which layers start open, and that is
+      all it does. It never changes a word. The mathematics is on every page,
+      folded shut by default, which means the beginner is never lied to and the
+      specialist never has to go looking for a different version of the site.
+    </p>
+
+    <h2>One trade-off, and what it cost</h2>
+    <p>
+      The glossary panel is portalled out of the React tree onto
+      <code>document.body</code> and positioned <code>fixed</code>. That is not
+      the natural way to build a tooltip, and it was forced: every layer body
+      sits inside the accordion's <code>overflow-hidden</code> box, which is
+      what makes the height animation read as a collapse, and it clips
+      horizontally as well. A panel rendered next to the word it defines gets
+      sliced off at the panel edge, and an absolutely positioned one is at the
+      mercy of any ancestor that later gains a transform. Leaving the tree
+      entirely is the only placement that cannot be clipped.
+    </p>
+    <p>
+      The cost is that the panel is no longer positioned or ordered relative to
+      the word it belongs to, and both halves of that had to be paid for
+      separately. Because it is pinned to the viewport rather than to the term,
+      it has to re-measure on every scroll event and only treats a scroll as
+      "the reader has moved on" once the page has been still for 200
+      milliseconds, which is also how it survives the smooth scroll that Tab
+      uses to bring a term into view. Because it renders at the end of
+      <code>&lt;body&gt;</code>, where nobody is reading, a screen reader would
+      hear the expanded state and then nothing, so the definition is spoken
+      through one persistent <code>aria-live</code> region created before the
+      text exists and shared by all the terms on the page. A visual fix turned
+      into an accessibility obligation, and the second part is the part that is
+      easy to miss.
+    </p>
+
+    <p class="provenance">
+      The rest of this page is fetched from the
+      <a href={sourceUrl}>Lodestar README</a> at build time and rendered here,
+      so it is maintained in the repository and not in this site. It covers the
+      architecture, the stack, how the project is verified, and, at the end
+      under "Known limits", what I would change.
+    </p>
+
+    <div set:html={html} />
+  </main>
+</Base>

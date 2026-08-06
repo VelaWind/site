@@ -1,0 +1,22 @@
+{
+  "name": "velawind-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "author": "VelaWind (https://github.com/velawind)",
+  "license": "MIT",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^7.1.6",
+    "marked": "^18.0.9"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^24.13.3",
+    "typescript": "^6.0.3"
+  }
+}

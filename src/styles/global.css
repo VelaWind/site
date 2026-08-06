@@ -1,0 +1,264 @@
+/*
+ * One stylesheet. Colours are custom properties so the dark scheme is a
+ * redefinition rather than a second set of rules, and every transition sits
+ * inside a `prefers-reduced-motion: no-preference` block so that motion is
+ * opt-out by default rather than something a reader has to fight.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #fbfbfa;
+  --surface: #f2f1ee;
+  --text: #1b1b1a;
+  --text-muted: #56554f;
+  --border: #d9d7d1;
+  --link: #1f4f8b;
+  --link-hover: #14365f;
+  --focus: #a4530a;
+  --code-bg: #eeece7;
+
+  --measure: 34rem;
+  --font-system: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131315;
+    --surface: #1c1c1f;
+    --text: #e8e7e3;
+    --text-muted: #a3a19a;
+    --border: #33333a;
+    --link: #8fb7e8;
+    --link-hover: #b6d2f4;
+    --focus: #f0a860;
+    --code-bg: #232329;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* No smooth scroll: it is motion, and there is nothing here that needs it. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-system);
+  font-size: 1rem;
+  line-height: 1.65;
+  /* 1rem of padding keeps the measure off the bezel at 320px. */
+  padding: 0 1rem;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 3rem 0 2rem;
+}
+
+/* ------------------------------------------------------------- typography */
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  /* Long identifiers such as `noUnusedParameters` must not overflow at 320px. */
+  overflow-wrap: break-word;
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.2rem;
+  margin-top: 2.75rem;
+  margin-bottom: 0.75rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 1rem;
+}
+
+ul,
+ol {
+  padding-left: 1.25rem;
+}
+
+li {
+  margin-bottom: 0.6rem;
+}
+
+strong {
+  font-weight: 650;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------ links */
+
+a {
+  color: var(--link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a {
+    transition: color 120ms ease;
+  }
+}
+
+a:hover {
+  color: var(--link-hover);
+}
+
+/* Focus is never removed, only made deliberate. */
+a:focus-visible,
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* --------------------------------------------------------------- skip link */
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* ------------------------------------------------------------------- code */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  overflow-wrap: break-word;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.9rem;
+  /* The README's command block is wider than 320px; it scrolls rather than
+     stretching the page. */
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
+  white-space: pre;
+}
+
+/* ------------------------------------------------------------------ rules */
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+
+/* ------------------------------------------------------------- provenance */
+
+/*
+ * The note that marks where the fetched README section begins. It is a visible
+ * boundary on purpose: a reader should be able to tell which words this site
+ * wrote and which it is quoting from the repository.
+ */
+.provenance {
+  border-left: 3px solid var(--border);
+  padding: 0.1rem 0 0.1rem 0.9rem;
+  margin: 2.5rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ----------------------------------------------------------------- footer */
+
+.site-footer {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.site-footer p {
+  margin: 0 0 0.5rem;
+}
+
+/* ------------------------------------------------------------------- home */
+
+/*
+ * The home page is a stub: a name, a line, and two links. It is centred in the
+ * viewport rather than sitting under a masthead, because there is not yet
+ * enough on it to need one.
+ */
+.home {
+  max-width: var(--measure);
+  margin: 0 auto;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem 0 1rem;
+}
+
+.home h1 {
+  font-size: 2rem;
+  margin-bottom: 0.4rem;
+}
+
+.home ul {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+
+.home li {
+  margin-bottom: 0.4rem;
+}

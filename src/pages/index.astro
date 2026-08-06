@@ -1,0 +1,25 @@
+---
+/**
+ * Home, deliberately a stub: the handle, one line, two links. No positioning
+ * line and no project list until there is something worth putting in them.
+ */
+import Base from '../layouts/Base.astro';
+
+// PLACEHOLDER: replace with the real handle-based address before launch.
+// It is the only invented value on the site.
+const email = 'hello@velawind.dev';
+---
+
+<Base
+  title="VelaWind"
+  description="VelaWind, computer science student."
+>
+  <main class="home" id="main">
+    <h1>VelaWind</h1>
+    <p class="muted">Computer science student.</p>
+    <ul>
+      <li><a href="https://github.com/velawind" rel="me">github.com/velawind</a></li>
+      <li><a href={`mailto:${email}`}>{email}</a></li>
+    </ul>
+  </main>
+</Base>
