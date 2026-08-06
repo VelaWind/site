@@ -67,8 +67,8 @@ const liveUrl = 'https://lodestar-nu-six.vercel.app';
 
     <h2>One trade-off, and what it cost</h2>
     <p>
-      The glossary panel is portalled out of the React tree onto
-      <code>document.body</code> and positioned <code>fixed</code>. That is not
+      The glossary panel is portalled out of the React tree
+      onto <code>document.body</code> and positioned <code>fixed</code>. That is not
       the natural way to build a tooltip, and it was forced: every layer body
       sits inside the accordion's <code>overflow-hidden</code> box, which is
       what makes the height animation read as a collapse, and it clips
@@ -84,8 +84,8 @@ const liveUrl = 'https://lodestar-nu-six.vercel.app';
       it has to re-measure on every scroll event and only treats a scroll as
       "the reader has moved on" once the page has been still for 200
       milliseconds, which is also how it survives the smooth scroll that Tab
-      uses to bring a term into view. Because it renders at the end of
-      <code>&lt;body&gt;</code>, where nobody is reading, a screen reader would
+      uses to bring a term into view. Because it renders at the end
+      of <code>&lt;body&gt;</code>, where nobody is reading, a screen reader would
       hear the expanded state and then nothing, so the definition is spoken
       through one persistent <code>aria-live</code> region created before the
       text exists and shared by all the terms on the page. A visual fix turned
@@ -94,8 +94,8 @@ const liveUrl = 'https://lodestar-nu-six.vercel.app';
     </p>
 
     <p class="provenance">
-      The rest of this page is fetched from the
-      <a href={sourceUrl}>Lodestar README</a> at build time and rendered here,
+      The rest of this page is fetched from
+      the <a href={sourceUrl}>Lodestar README</a> at build time and rendered here,
       so it is maintained in the repository and not in this site. It covers the
       architecture, the stack, how the project is verified, and, at the end
       under "Known limits", what I would change.
