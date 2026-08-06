@@ -26,11 +26,19 @@ const liveUrl = 'https://lodestar-nu-six.vercel.app';
   title="Lodestar · VelaWind"
   description="An astrophysics education site where one text serves a reader who has never studied physics and a reader who works in the field."
 >
+  {/*
+    Decorative only: it reports the scroll position the scrollbar already
+    shows, so it is hidden from assistive technology. It is driven entirely by
+    `animation-timeline: scroll()` in the stylesheet and is invisible without
+    it; there is no script on this page.
+  */}
+  <div class="reading-progress" aria-hidden="true"></div>
+
   <main class="page" id="main">
-    <p class="muted"><a href="/">VelaWind</a> · <a href="/projects">Projects</a></p>
+    <p class="eyebrow"><a href="/">VelaWind</a> · <a href="/projects">Projects</a></p>
 
     <h1>Lodestar</h1>
-    <p class="muted">
+    <p class="lede">
       Interactive astrophysics, explained in seven layers you choose to open.
       <br />
       <a href={liveUrl}>Live site</a> · <a href={repoUrl}>Source</a>
@@ -101,6 +109,6 @@ const liveUrl = 'https://lodestar-nu-six.vercel.app';
       under "Known limits", what I would change.
     </p>
 
-    <div set:html={html} />
+    <div class="readme" set:html={html} />
   </main>
 </Base>

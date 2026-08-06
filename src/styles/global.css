@@ -1,24 +1,85 @@
 /*
- * One stylesheet. Colours are custom properties so the dark scheme is a
- * redefinition rather than a second set of rules, and every transition sits
- * inside a `prefers-reduced-motion: no-preference` block so that motion is
- * opt-out by default rather than something a reader has to fight.
+ * One stylesheet, no dependencies, no webfont request: the type is whatever the
+ * reader's system already has, sized and spaced deliberately.
+ *
+ * Three things are held to as rules here:
+ *
+ *   - Every size and every gap comes from a scale (--text-* and --space-*).
+ *     A one-off value in a rule below is a bug, not a decision.
+ *   - Colour is defined once in oklch, and the dark scheme is a redefinition of
+ *     the same tokens rather than a second set of rules. oklch because its
+ *     lightness axis is perceptual: the light and dark palettes are the same
+ *     colours at deliberately chosen lightnesses, not two guesses.
+ *   - Everything that moves sits inside `prefers-reduced-motion: no-preference`,
+ *     so motion is opt-in from the reader's own setting rather than something
+ *     they have to fight. Nothing on this site depends on motion to be read.
  */
+
+/* ----------------------------------------------------------------- tokens */
 
 :root {
   color-scheme: light dark;
 
-  --bg: #fbfbfa;
-  --surface: #f2f1ee;
-  --text: #1b1b1a;
-  --text-muted: #56554f;
-  --border: #d9d7d1;
-  --link: #1f4f8b;
-  --link-hover: #14365f;
-  --focus: #a4530a;
-  --code-bg: #eeece7;
+  /*
+   * One accent, hue 250, used for links, focus rings, rules and the reading
+   * progress bar. A second accent would be a second thing to justify, and
+   * there is nothing on this site that two colours would tell apart.
+   */
+  --accent: oklch(48% 0.115 250);
+  --accent-strong: oklch(37% 0.1 250);
 
+  --bg: oklch(98.6% 0.004 95);
+  --surface: oklch(96.2% 0.006 95);
+  --text: oklch(24% 0.012 95);
+  --text-muted: oklch(46% 0.014 95);
+  --border: oklch(87% 0.009 95);
+  --code-bg: oklch(95.5% 0.008 95);
+
+  /*
+   * A hairline in the accent, kept quiet enough to sit under prose. It is a
+   * literal value rather than a mix of --accent and --border, because oklch
+   * interpolates hue the polar way: mixing a blue with this warm grey travels
+   * through green, and the hairlines came out sage.
+   */
+  --rule: oklch(84% 0.035 250);
+
+  /*
+   * Type scale: 1.25 (major third) from a 17px base. 17px because 16 is the
+   * browser default that nobody chose, and a third is wide enough that an h2
+   * is unmistakably a heading on a page that has no other visual furniture.
+   *
+   *   s 13.6 · m 17 · l 21.25 · xl 26.6 · 2xl 33.2 · 3xl 41.5
+   */
+  --type-ratio: 1.25;
+  --text-m: 1.0625rem;
+  --text-s: calc(var(--text-m) / var(--type-ratio));
+  --text-l: calc(var(--text-m) * var(--type-ratio));
+  --text-xl: calc(var(--text-l) * var(--type-ratio));
+  --text-2xl: calc(var(--text-xl) * var(--type-ratio));
+  --text-3xl: calc(var(--text-2xl) * var(--type-ratio));
+
+  --leading-body: 1.6;
+  --leading-tight: 1.15;
+
+  /*
+   * Spacing scale: 1.5 from a 1rem base, so a gap is always a recognisable
+   * multiple of the one before it.
+   *
+   *   3xs 4 · 2xs 8 · xs 12 · s 16 · m 24 · l 36 · xl 54 · 2xl 81
+   */
+  --space-ratio: 1.5;
+  --space-s: 1rem;
+  --space-xs: calc(var(--space-s) / var(--space-ratio));
+  --space-2xs: calc(var(--space-xs) / var(--space-ratio));
+  --space-3xs: calc(var(--space-2xs) / var(--space-ratio));
+  --space-m: calc(var(--space-s) * var(--space-ratio));
+  --space-l: calc(var(--space-m) * var(--space-ratio));
+  --space-xl: calc(var(--space-l) * var(--space-ratio));
+  --space-2xl: calc(var(--space-xl) * var(--space-ratio));
+
+  /* ~64 characters at the base size: the column is the layout. */
   --measure: 34rem;
+
   --font-system: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
@@ -27,17 +88,26 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #131315;
-    --surface: #1c1c1f;
-    --text: #e8e7e3;
-    --text-muted: #a3a19a;
-    --border: #33333a;
-    --link: #8fb7e8;
-    --link-hover: #b6d2f4;
-    --focus: #f0a860;
-    --code-bg: #232329;
+    /*
+     * The dark accent is the same hue lifted to 80% lightness rather than the
+     * light one on a dark field: a 48% blue on a 17% ground is legible but
+     * reads as a hole in the page.
+     */
+    --accent: oklch(80% 0.095 250);
+    --accent-strong: oklch(88% 0.06 250);
+
+    --bg: oklch(17.5% 0.012 250);
+    --surface: oklch(22% 0.014 250);
+    --text: oklch(92% 0.008 250);
+    --text-muted: oklch(73% 0.014 250);
+    --border: oklch(34% 0.017 250);
+    --code-bg: oklch(23% 0.014 250);
+
+    --rule: oklch(38% 0.035 250);
   }
 }
+
+/* ------------------------------------------------------------------ reset */
 
 *,
 *::before,
@@ -55,10 +125,107 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-system);
-  font-size: 1rem;
-  line-height: 1.65;
+  font-size: var(--text-m);
+  line-height: var(--leading-body);
   /* 1rem of padding keeps the measure off the bezel at 320px. */
-  padding: 0 1rem;
+  padding: 0 var(--space-s);
+}
+
+/* ------------------------------------------------------------- typography */
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+figure {
+  /*
+   * Margins are zeroed here and reinstated by the flow rule below, so that the
+   * gap between two blocks is decided in one place by the block that follows,
+   * rather than by whichever of two adjacent margins happens to win.
+   */
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: var(--leading-tight);
+  /* Ragged-right is fine in prose and ugly in a two-line heading. */
+  text-wrap: balance;
+  /* Long identifiers such as `noUnusedParameters` must not overflow at 320px. */
+  overflow-wrap: break-word;
+}
+
+h1 {
+  font-size: clamp(var(--text-xl), 1.2rem + 2.4vw, var(--text-2xl));
+  font-weight: 660;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: var(--text-l);
+  font-weight: 640;
+  letter-spacing: -0.01em;
+}
+
+/*
+ * h3 is the base size rather than a fourth step. Below an h2 of 21px the next
+ * step down is body text, and the distinction that is left to make is weight.
+ */
+h3 {
+  font-size: var(--text-m);
+  font-weight: 660;
+}
+
+p,
+li {
+  /* Avoids the one-word last line; ignored where unsupported. */
+  text-wrap: pretty;
+}
+
+li {
+  margin-bottom: var(--space-2xs);
+}
+
+li:last-child {
+  margin-bottom: 0;
+}
+
+ul,
+ol {
+  padding-left: var(--space-m);
+}
+
+strong {
+  font-weight: 660;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------- flow */
+
+/*
+ * The rhythm of the page. Every block gets its top margin from the scale, and
+ * a block that wants more room says so once, in its own rule, by setting
+ * --flow-space. Section spacing is therefore a property of the section rather
+ * than of every element that might precede it.
+ */
+.page > * + *,
+.home > * + *,
+.readme > * + * {
+  margin-block-start: var(--flow-space, var(--space-s));
+}
+
+h2 {
+  --flow-space: var(--space-xl);
+}
+
+h3 {
+  --flow-space: var(--space-l);
 }
 
 /* ---------------------------------------------------------------- layout */
@@ -66,84 +233,62 @@ body {
 .page {
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 3rem 0 2rem;
+  padding: var(--space-xl) 0 var(--space-l);
 }
 
-/* ------------------------------------------------------------- typography */
-
-h1,
-h2,
-h3 {
-  line-height: 1.25;
-  /* Long identifiers such as `noUnusedParameters` must not overflow at 320px. */
-  overflow-wrap: break-word;
-  margin: 0;
-}
-
-h1 {
-  font-size: 1.75rem;
-  letter-spacing: -0.01em;
-}
-
-h2 {
-  font-size: 1.2rem;
-  margin-top: 2.75rem;
-  margin-bottom: 0.75rem;
-}
-
-h3 {
-  font-size: 1.05rem;
-  margin-top: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-p,
-ul,
-ol {
-  margin: 0 0 1rem;
-}
-
-ul,
-ol {
-  padding-left: 1.25rem;
-}
-
-li {
-  margin-bottom: 0.6rem;
-}
-
-strong {
-  font-weight: 650;
-}
-
-.muted {
+/*
+ * The line above a page title: where you are, in small type, before the title
+ * rather than competing with it.
+ */
+.eyebrow {
+  font-size: var(--text-s);
   color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.eyebrow + h1 {
+  --flow-space: var(--space-xs);
+}
+
+/* The standfirst under a title: one step up from body, and clearly not it. */
+.lede {
+  --flow-space: var(--space-xs);
+  font-size: var(--text-l);
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-wrap: pretty;
 }
 
 /* ------------------------------------------------------------------ links */
 
 a {
-  color: var(--link);
+  color: var(--accent);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.16em;
+  text-decoration-color: color-mix(in oklch, currentcolor 45%, transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   a {
-    transition: color 120ms ease;
+    transition: color 120ms ease, text-decoration-color 120ms ease;
   }
 }
 
 a:hover {
-  color: var(--link-hover);
+  color: var(--accent-strong);
+  text-decoration-color: currentcolor;
 }
 
 /* Focus is never removed, only made deliberate. */
 a:focus-visible,
 :focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--accent) 22%, transparent);
 }
 
 /* --------------------------------------------------------------- skip link */
@@ -154,15 +299,15 @@ a:focus-visible,
   top: 0;
   background: var(--surface);
   color: var(--text);
-  padding: 0.6rem 0.9rem;
+  padding: var(--space-xs) var(--space-s);
   border: 1px solid var(--border);
   border-radius: 4px;
-  z-index: 1;
+  z-index: 3;
 }
 
 .skip:focus {
-  left: 1rem;
-  top: 1rem;
+  left: var(--space-s);
+  top: var(--space-s);
 }
 
 /* ------------------------------------------------------------------- code */
@@ -180,16 +325,15 @@ pre {
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 5px;
-  padding: 0.9rem;
-  /* The README's command block is wider than 320px; it scrolls rather than
-     stretching the page. */
+  padding: var(--space-s);
+  /* A command block wider than 320px scrolls rather than stretching the page. */
   overflow-x: auto;
 }
 
 pre code {
   background: none;
   padding: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-s);
   white-space: pre;
 }
 
@@ -197,23 +341,102 @@ pre code {
 
 hr {
   border: 0;
-  border-top: 1px solid var(--border);
-  margin: 2.5rem 0;
+  border-top: 1px solid var(--rule);
+  margin: var(--space-xl) 0;
 }
 
-/* ------------------------------------------------------------- provenance */
+/* ------------------------------------------------- framing versus fetched */
 
 /*
- * The note that marks where the fetched README section begins. It is a visible
- * boundary on purpose: a reader should be able to tell which words this site
- * wrote and which it is quoting from the repository.
+ * The note that marks where the fetched README section begins. A reader should
+ * be able to tell which words this site wrote and which it is quoting from the
+ * repository, so the boundary is a block in the accent, set off by the largest
+ * gap on the page and followed by a rule across the full measure.
  */
 .provenance {
-  border-left: 3px solid var(--border);
-  padding: 0.1rem 0 0.1rem 0.9rem;
-  margin: 2.5rem 0 0;
+  --flow-space: var(--space-2xl);
+  border-left: 2px solid var(--accent);
+  background: var(--surface);
+  padding: var(--space-xs) var(--space-s);
+  border-radius: 0 4px 4px 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--text-s);
+}
+
+.readme {
+  --flow-space: var(--space-l);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-xs);
+}
+
+/* The first heading of the fetched section sits under that rule, not away from it. */
+.readme > :first-child {
+  --flow-space: var(--space-m);
+  margin-block-start: var(--space-m);
+}
+
+/* --------------------------------------------------- reading progress bar */
+
+/*
+ * Case study only, and entirely decorative: aria-hidden, and it tracks the
+ * scroll position that the scrollbar already reports.
+ *
+ * It is scaled to nothing by default and grown by a scroll-driven animation,
+ * so a browser without `animation-timeline` (or a reader who has asked for no
+ * motion) gets an element that is present, fixed, and invisible, rather than a
+ * full-width bar stuck at 100%.
+ */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reading-progress {
+      animation-name: grow-reading-progress;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      /* Duration is left at `auto` so the timeline, not a clock, drives it. */
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes grow-reading-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ------------------------------------------------------ view transitions */
+
+/*
+ * Cross-document transitions, CSS only. This is the whole implementation: no
+ * router, no component, no script. A browser that does not support it navigates
+ * normally, which is what it did before.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 180ms;
+  }
 }
 
 /* ----------------------------------------------------------------- footer */
@@ -221,66 +444,78 @@ hr {
 .site-footer {
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 2rem 0 3rem;
-  border-top: 1px solid var(--border);
+  padding: var(--space-m) 0 var(--space-xl);
+  border-top: 1px solid var(--rule);
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: var(--text-s);
+  text-wrap: pretty;
 }
 
-.site-footer p {
-  margin: 0 0 0.5rem;
+.site-footer p + p {
+  margin-top: var(--space-2xs);
 }
 
 /* --------------------------------------------------------------- projects */
 
 /*
- * The case-study index. Each item is a link and a line under it, so the marker
+ * The case-study index. Each item is a name and a line under it, so the marker
  * is dropped: a bullet in front of a two-line entry reads as an outline rather
- * than a list of things to click. Hover is the link colour change every link
+ * than a list of things to click. The name is one step up the scale, which is
+ * the only hierarchy the list needs. Hover is the link colour change every link
  * on the site already has, and nothing else.
  */
 .project-list {
+  --flow-space: var(--space-l);
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0 0;
 }
 
-.project-list li {
-  margin-bottom: 1.5rem;
+.project-list li + li {
+  margin-top: var(--space-m);
+}
+
+.project-list a {
+  font-size: var(--text-l);
+  letter-spacing: -0.01em;
 }
 
 .project-list p {
-  margin: 0.15rem 0 0;
+  margin-top: var(--space-3xs);
 }
 
 /* ------------------------------------------------------------------- home */
 
 /*
- * The home page is a stub: a name, a line, and two links. It is centred in the
- * viewport rather than sitting under a masthead, because there is not yet
- * enough on it to need one.
+ * The home page is short, so it is set large: the name at the top of the type
+ * scale, the line under it one step above body, and the links held apart by
+ * the widest gaps on the site. Presence comes from the size of the type and
+ * the space around it, not from anything added to the page.
  */
 .home {
   max-width: var(--measure);
   margin: 0 auto;
-  min-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 3rem 0 1rem;
+  padding: var(--space-2xl) 0 var(--space-xl);
 }
 
 .home h1 {
-  font-size: 2rem;
-  margin-bottom: 0.4rem;
+  font-size: clamp(var(--text-xl), 1.2rem + 4vw, var(--text-3xl));
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.home .lede {
+  --flow-space: var(--space-xs);
+  max-width: 24ch;
 }
 
 .home ul {
+  --flow-space: var(--space-xl);
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0 0;
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-m);
 }
 
 .home li {
-  margin-bottom: 0.4rem;
+  margin-bottom: var(--space-xs);
 }
