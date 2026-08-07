@@ -26,4 +26,9 @@ export const projects: Project[] = [
     blurb: 'Interactive astrophysics, explained in seven layers you choose to open.',
     href: '/projects/lodestar',
   },
+  {
+    name: 'Vela Sea',
+    blurb: 'A maritime simulator whose simulation layer runs, and is tested, with no window open.',
+    href: '/projects/vela-sea',
+  },
 ];

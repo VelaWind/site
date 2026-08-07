@@ -11,12 +11,17 @@
  *     have one home, in the repository, and this page renders them.
  *
  * If the fetch fails or a marker has gone, `fetchCaseStudySection` throws and
- * this page fails to build. That is intentional; see src/lib/lodestar-readme.ts.
+ * this page fails to build. That is intentional; see src/lib/case-study-readme.ts.
  */
 import Base from '../../layouts/Base.astro';
-import { fetchCaseStudySection } from '../../lib/lodestar-readme';
+import { fetchCaseStudySection } from '../../lib/case-study-readme';
 
-const { html, sourceUrl } = await fetchCaseStudySection();
+const { html, sourceUrl } = await fetchCaseStudySection({
+  owner: 'VelaWind',
+  repo: 'lodestar',
+  branch: 'main',
+  expectedHeading: '# Lodestar',
+});
 
 const repoUrl = 'https://github.com/VelaWind/lodestar';
 const liveUrl = 'https://lodestar-nu-six.vercel.app';

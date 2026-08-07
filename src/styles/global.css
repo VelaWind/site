@@ -355,6 +355,23 @@ pre code {
   white-space: pre;
 }
 
+/* ----------------------------------------------------------------- images */
+
+/*
+ * There were no images on this site until a fetched case-study span brought
+ * one. A README screenshot is wider than this column at every viewport, so it
+ * is constrained here rather than in the fetch: the markdown says what the
+ * image is, the stylesheet says how wide it is allowed to be. Without this the
+ * page scrolls sideways at 320px.
+ */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
 /* ------------------------------------------------------------------ rules */
 
 hr {

@@ -1,0 +1,151 @@
+---
+/**
+ * The Vela Sea case study.
+ *
+ * Two kinds of prose live on this page, and the split is deliberate:
+ *
+ *   - Everything above the provenance note is written here, because it is
+ *     framing for a portfolio reader rather than documentation for someone
+ *     cloning the repository. It is not in the README and does not belong there.
+ *   - Everything below it is fetched from the README at build time. Those words
+ *     have one home, in the repository, and this page renders them.
+ *
+ * If the fetch fails or a marker has gone, `fetchCaseStudySection` throws and
+ * this page fails to build. That is intentional; see src/lib/case-study-readme.ts.
+ */
+import Base from '../../layouts/Base.astro';
+import { fetchCaseStudySection } from '../../lib/case-study-readme';
+
+const { html, sourceUrl } = await fetchCaseStudySection({
+  owner: 'VelaWind',
+  repo: 'vela-sea',
+  branch: 'main',
+  expectedHeading: '# Vela Sea',
+});
+
+const repoUrl = 'https://github.com/VelaWind/vela-sea';
+const liveUrl = 'https://velawind.github.io/vela-sea/';
+---
+
+<Base
+  title="Vela Sea · VelaWind"
+  description="A maritime simulator whose simulation layer runs, and is tested, with no window open."
+>
+  {/*
+    Decorative only: it reports the scroll position the scrollbar already
+    shows, so it is hidden from assistive technology. It is driven entirely by
+    `animation-timeline: scroll()` in the stylesheet and is invisible without
+    it; there is no script on this page.
+  */}
+  <div class="reading-progress" aria-hidden="true"></div>
+
+  <main class="page" id="main">
+    <p class="eyebrow"><a href="/">VelaWind</a> · <a href="/projects">Projects</a></p>
+
+    <h1>Vela Sea</h1>
+    <p class="lede">
+      A maritime simulator whose simulation layer runs, and is tested, with no
+      window open.
+      <br />
+      <a href={liveUrl}>Web build</a> · <a href={repoUrl}>Source</a>
+    </p>
+
+    <h2>The problem</h2>
+    <p>
+      A game loop and a simulation want to live in the same objects. The thing
+      that knows a vessel's heading is the thing that knows how to draw it, and
+      the frame that advances the world is the frame that paints it. That is the
+      path of least resistance, and it is also the end of being able to check
+      anything. Once the two are one thing, nothing can be verified without
+      opening a window, so confirming that a vessel handles a crossing correctly
+      means playing it and watching.
+    </p>
+
+    <h2>Why the obvious approach did not work</h2>
+    <p>
+      The obvious fix is discipline: keep drawing out of the simulation and be
+      careful. That does not hold, because "be careful" has no failure mode.
+      Nothing reports it broken. No build turns red on the day a rectangle from
+      the drawing layer ends up inside the physics, and the drift only becomes
+      visible much later, when the test that was supposed to exist turns out to
+      be impossible to write.
+    </p>
+    <p>
+      So the rule is stated instead as a property a machine can check: nothing
+      under <code>engine/</code>, <code>data/</code> or <code>config.py</code>
+      imports Pygame. That is one grep, and it either passes or it does not. That
+      single constraint is what lets a 16-scenario bot play the whole game under
+      SDL's dummy video and audio drivers, with no display and no sound card,
+      through movement, contracts, zone fines, grounding damage, hull failure,
+      fuel exhaustion and rescue dispatch.
+    </p>
+    <p>
+      The place this is most visible is the one that looks like a workaround.
+      In <code>engine/collision.py</code> at line 164 the router imports its
+      waypoint list from <code>data/world_data.py</code> inside the function that
+      needs it rather than at the top of the file, so that
+      loading <code>engine/</code> does not pull in <code>data/</code>. That is
+      the rule being obeyed at the point where obeying it costs something, not
+      waived because it had become inconvenient. A module-level import would have
+      been tidier to read and would have quietly made the layer depend on the
+      thing it is not allowed to depend on.
+    </p>
+
+    <h2>One trade-off</h2>
+    <p>
+      Collision avoidance does not run inside the fixed timestep. It runs once
+      per rendered frame, at <code>main.py</code> lines 2789 to 2800. Inside the
+      simulation loop it ran up to 375 times per frame, and that O(n²) pair scan
+      repeated hundreds of times per frame was the crash at 3× speed, so it was
+      lifted out of the loop.
+    </p>
+    <p>
+      The cost is worth stating precisely, because it is not the kind that
+      arrives as a bug report. The fixed timestep exists so that the simulation
+      does not depend on frame rate. This is the one subsystem exempt from it.
+      Avoidance is now sampled at display rate, so the world advances further
+      between two give-way decisions on a slow machine than on a fast one, which
+      means a slow machine gets coarser collision behaviour than a fast one. The
+      web build halves it again, to every other frame. Nothing in the repository
+      measures the difference between them.
+    </p>
+
+    <h2>What I would change</h2>
+    <p>
+      The least comfortable one first. <code>test_cog_math.py</code> holds a
+      hand-copied body of the function at <code>render/chart.py</code> line 140,
+      described in its own docstring as an exact copy of that function so the
+      logic can be tested without importing Pygame. The two agree today; I
+      checked them line by line. Nothing keeps them agreeing. Two of the
+      avoidance tests do the same thing from the other
+      end: <code>tests/test_collision.py</code> line 70
+      and <code>tests/test_traffic.py</code> line 72 each re-implement the
+      steering step that the game itself runs at <code>main.py</code> line 2503,
+      so they pass against a loop the game does not execute. This is the same
+      parallel-texts-drift failure the Lodestar case study is built on, in my own
+      repository, written after I had made the argument.
+    </p>
+    <p>
+      Then the two structural ones. <code>main.py</code> is 3,544 lines, and the
+      search-and-rescue dispatch and the AI decision helpers are in it. The
+      layering rule holds by its letter, because <code>main.py</code> was never
+      in its scope, but that logic is simulation and it sits on the wrong side of
+      the line the rule was drawn to protect.
+      And <code>engine/rules.py</code> defines a rules engine that is exported
+      from <code>engine/__init__.py</code> and never instantiated anywhere, while
+      the zone rules the game actually enforces, the speed caps and the fines,
+      sit inline in the game loop. Someone looking for the rules finds a module
+      named for them that does nothing.
+    </p>
+
+    <p class="provenance">
+      The rest of this page is fetched from
+      the <a href={sourceUrl}>Vela Sea README</a> at build time and rendered here,
+      so it is maintained in the repository and not in this site. It covers the
+      architecture, the layering rule and how it is enforced, and, under "Known
+      limits", what does not work.
+    </p>
+
+    <div class="readme" set:html={html} />
+  </main>
+</Base>
