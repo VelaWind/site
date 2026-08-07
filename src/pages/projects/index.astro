@@ -1,28 +1,16 @@
 ---
 /**
- * The case-study index: one card per project, on the wide track.
+ * The case-study index: one card per project that has a case study on this
+ * site. Projects without one live on the home page, where a card can point at
+ * a repository; this route is the way into the case studies, so an entry here
+ * without a page behind it would be a dead link.
  *
- * The list comes from src/lib/projects.ts rather than from markup here, so that
- * a second project is one entry in one array and not an edit to this page. It
- * is the only route on the site that uses .wrap: everything else is running
- * text and stays on the prose measure.
- *
- * The per-card colour and status arrive as custom properties on the element
- * rather than as a class per project, so adding a project needs no new CSS.
+ * The card itself is a component shared with the home page, so the two cannot
+ * drift apart.
  */
 import Base from '../../layouts/Base.astro';
-import { projects, STATUS_LABEL } from '../../lib/projects';
-
-/**
- * Status to colour token. Both reachable states share --live because the
- * palette gives that colour one meaning, "can be opened now", and a playable
- * build and a deployed site are both that. Anything still ahead is --vio.
- */
-const STATUS_TOKEN: Record<NonNullable<(typeof projects)[number]['status']>, string> = {
-  live: '--live',
-  playable: '--live',
-  wip: '--vio',
-};
+import ProjectCard from '../../components/ProjectCard.astro';
+import { caseStudies } from '../../lib/projects';
 ---
 
 <Base
@@ -35,33 +23,7 @@ const STATUS_TOKEN: Record<NonNullable<(typeof projects)[number]['status']>, str
     <h1>Projects</h1>
 
     <ul class="project-grid">
-      {
-        projects.map((project) => (
-          <li class="card">
-            <div
-              class="card-media"
-              style={`--card-accent: var(--${project.accent})`}
-              aria-hidden="true"
-            />
-            <div class="card-body">
-              <h2 class="card-name">
-                <a href={project.href}>{project.name}</a>
-              </h2>
-              <p class="card-blurb">{project.blurb}</p>
-              <ul class="card-tags">
-                {project.tags.map((tag) => (
-                  <li>{tag}</li>
-                ))}
-              </ul>
-              {project.status && (
-                <p class="card-status" style={`--status-color: var(${STATUS_TOKEN[project.status]})`}>
-                  {STATUS_LABEL[project.status]}
-                </p>
-              )}
-            </div>
-          </li>
-        ))
-      }
+      {caseStudies.map((project) => <ProjectCard project={project} />)}
     </ul>
   </main>
 </Base>

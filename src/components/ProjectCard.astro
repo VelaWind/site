@@ -1,0 +1,57 @@
+---
+/**
+ * One project card, used by /projects and by the home page.
+ *
+ * It is a component rather than markup repeated in two pages for the reason
+ * the Vela Sea case study spends a section on: two copies of the same thing
+ * agree until the day one of them is edited, and nothing reports the drift.
+ */
+import type { Project } from '../lib/projects';
+import { STATUS_LABEL, STATUS_TOKEN } from '../lib/projects';
+
+interface Props {
+  project: Project;
+  /** Heading level, so the card fits the outline of whichever page holds it. */
+  level?: 2 | 3;
+}
+
+const { project, level = 2 } = Astro.props;
+const Heading = `h${level}` as 'h2' | 'h3';
+
+// An off-site card says so in its own accessible name, so a reader using a
+// screen reader learns where the link goes before following it rather than
+// after. On-site case studies need no such warning: that is the default.
+const away = !project.caseStudy;
+---
+
+<li class="card">
+  <div
+    class="card-media"
+    style={project.accent ? `--card-accent: var(--${project.accent})` : undefined}
+    aria-hidden="true"
+  />
+  <div class="card-body">
+    <Heading class="card-name">
+      <a
+        href={project.href}
+        rel={away ? 'noopener' : undefined}
+      >
+        {project.name}{away && <span class="visually-hidden"> (source on GitHub)</span>}
+      </a>
+    </Heading>
+    <p class="card-blurb">{project.blurb}</p>
+    <ul class="card-tags">
+      {project.tags.map((tag) => <li>{tag}</li>)}
+    </ul>
+    <p class="card-foot">
+      {
+        project.status && (
+          <span class="card-status" style={`--status-color: var(${STATUS_TOKEN[project.status]})`}>
+            {STATUS_LABEL[project.status]}
+          </span>
+        )
+      }
+      <span class="card-where">{project.caseStudy ? 'Case study' : 'Source'}</span>
+    </p>
+  </div>
+</li>

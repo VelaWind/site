@@ -1,14 +1,16 @@
 /**
- * The case studies that exist, in the order they appear at /projects.
+ * Every project the site shows, in the order it shows them.
  *
- * This array is the index. Adding a project is adding an entry here, and the
- * only rule is that its page has to exist first: /projects is the sole route
- * that links into the case studies, so an entry whose page has not been
- * written yet is a dead link with nothing else on the site to soften it. An
- * absent project is invisible; a broken one is a broken site.
+ * One array, two surfaces. /projects lists only the entries with a case study,
+ * because that route is the way into the case studies and an entry there
+ * without a page behind it is a dead link. The home page shows all of them,
+ * because a project with no case study written yet is still work, and its
+ * repository is a real destination rather than a missing one.
+ *
+ * Adding a project is adding an entry here. Nothing else needs an edit.
  */
 export interface Project {
-  /** The name, as it should read in the list. */
+  /** The name, as it should read on a card. */
   name: string;
   /**
    * One line saying what it is, for a reader deciding whether to click. It is
@@ -16,28 +18,37 @@ export interface Project {
    * the case study is where the argument goes.
    */
   blurb: string;
-  /** The route of the case study, which must already be a page in src/pages. */
+  /**
+   * Where the card goes: the case study when there is one, the public
+   * repository when there is not. Never a route that does not exist.
+   */
   href: string;
   /**
+   * Whether `href` is a case study on this site. Drives which entries /projects
+   * lists, and lets a card say where it is about to send a reader, since "read
+   * the case study" and "here is the source" are different promises.
+   */
+  caseStudy: boolean;
+  /**
    * What it is built with, shortest recognisable name each. Four or so: the
-   * point is to let a reader place the project in a language and a domain at a
-   * glance, and a full dependency list does that worse than four names do.
-   * Every tag here has to be true of the repository, not aspirational.
+   * point is to place the project in a language and a domain at a glance, and
+   * a full dependency list does that worse than four names do. Every tag has
+   * to be true of the repository, not aspirational.
    */
   tags: string[];
   /**
-   * Which colour identifies this project, by token name. Not a decoration: the
-   * palette assigns one meaning per colour, so `star` is Lodestar and `sea` is
-   * Vela Sea, and a card cannot borrow a colour that already means something
-   * else. A new project needs its own hue in global.css rather than a
-   * second-hand one. See the colour block there.
+   * Which colour identifies this project, by token name. Optional, and the
+   * absence is deliberate: the palette gives each colour exactly one meaning,
+   * so there is no spare hue to hand out. A project with no colour of its own
+   * gets a neutral panel rather than borrowing one that already means
+   * something else. Giving these a colour means adding a hue in global.css.
    */
-  accent: 'star' | 'sea' | 'sky' | 'vio';
+  accent?: 'star' | 'sea';
   /**
    * Whether a reader can open the thing itself right now, as opposed to
-   * reading about it. Optional, because "no badge" is the honest state for a
-   * project that is only a case study, and a badge that says nothing is worse
-   * than no badge.
+   * reading about it. Optional, because "no badge" is the honest state for
+   * anything whose availability does not reduce to one word, and a badge that
+   * says nothing is worse than no badge.
    */
   status?: 'live' | 'playable' | 'wip';
 }
@@ -47,6 +58,7 @@ export const projects: Project[] = [
     name: 'Lodestar',
     blurb: 'Interactive astrophysics, explained in seven layers you choose to open.',
     href: '/projects/lodestar',
+    caseStudy: true,
     tags: ['React', 'TypeScript', 'Canvas 2D', 'KaTeX'],
     accent: 'star',
     status: 'live',
@@ -55,11 +67,29 @@ export const projects: Project[] = [
     name: 'Vela Sea',
     blurb: 'A maritime simulator whose simulation layer runs, and is tested, with no window open.',
     href: '/projects/vela-sea',
+    caseStudy: true,
     tags: ['Python', 'Pygame', 'pytest', 'pygbag'],
     accent: 'sea',
     status: 'playable',
   },
+  {
+    name: 'Veritas',
+    blurb: 'A catalogue of knowledge claims where Postgres enforces the rules, not the application.',
+    href: 'https://github.com/VelaWind/veritas',
+    caseStudy: false,
+    tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
+  },
+  {
+    name: 'Anchorfile',
+    blurb: 'A command-line tool that reads a repository and writes the context file an AI agent needs.',
+    href: 'https://github.com/VelaWind/anchorfile',
+    caseStudy: false,
+    tags: ['TypeScript', 'Node', 'commander', 'npm'],
+  },
 ];
+
+/** The entries /projects is allowed to list. */
+export const caseStudies = projects.filter((p) => p.caseStudy);
 
 /**
  * Badge wording, kept next to the type it belongs to so a new status cannot be
@@ -69,4 +99,15 @@ export const STATUS_LABEL: Record<NonNullable<Project['status']>, string> = {
   live: 'Live',
   playable: 'Playable',
   wip: 'In progress',
+};
+
+/**
+ * Status to colour token. Both reachable states share --live because the
+ * palette gives that colour one meaning, "can be opened now", and a playable
+ * build and a deployed site are both that. Anything still ahead is --vio.
+ */
+export const STATUS_TOKEN: Record<NonNullable<Project['status']>, string> = {
+  live: '--live',
+  playable: '--live',
+  wip: '--vio',
 };

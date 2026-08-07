@@ -1,33 +1,154 @@
 ---
 /**
- * Home: the handle, the positioning line, and the links out.
+ * Home. Seven sections on the wide track, with every block of running text
+ * pulled back to the reading measure individually.
  *
- * The projects link is the only route into the case studies, which were
- * otherwise reachable only by typing the URL. It is a link and not a list:
- * the list lives at /projects, where it can grow without this page growing.
+ * The project cards come from src/lib/projects.ts through the same component
+ * /projects uses, so the two pages cannot show different things about the same
+ * project. The stat figures are quoted from repositories and each one is
+ * checkable: see the comment beside them.
  */
 import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { projects } from '../lib/projects';
 
 // PLACEHOLDER: replace with the real handle-based address before launch.
 // It is the only invented value on the site.
 const email = 'hello@velawind.dev';
+
+/*
+ * Every figure here was read out of a repository rather than remembered:
+ *   324  lodestar README, "npm test is 324 Vitest tests across 8 files"
+ *    33  lodestar README, "the 33 physics sanity checks as assertions"
+ *     7  lodestar README, "Every topic is one page of seven layers"
+ *     5  the public repositories under github.com/VelaWind
+ * A number that stops being true is a number to delete, not to round.
+ */
+const stats = [
+  { figure: '324', label: 'tests in Lodestar' },
+  { figure: '33', label: 'physics sanity checks' },
+  { figure: '7', label: 'layers per topic' },
+  { figure: '5', label: 'public repositories' },
+];
 ---
 
 <Base
   title="VelaWind"
-  description="VelaWind, computer science student."
+  description="VelaWind builds systems whose ground truth comes from something real."
 >
-  <main class="home" id="main">
-    <h1>VelaWind</h1>
-    <p class="lede">
-      Computer science student. I build systems whose ground truth comes from
-      something real: SI constants, the maritime collision rules, database
-      constraints, the filesystem.
-    </p>
-    <ul>
-      <li><a href="/projects">Projects</a></li>
-      <li><a href="https://github.com/velawind" rel="me">github.com/velawind</a></li>
-      <li><a href={`mailto:${email}`}>{email}</a></li>
+  <div class="wrap">
+    <header class="site-header">
+      <a class="wordmark" href="/">
+        <span class="orb" aria-hidden="true"></span>
+        VelaWind
+      </a>
+      <nav class="site-nav" aria-label="Sections">
+        <ul>
+          <li><a href="#work">Work</a></li>
+          <li><a href="#building">Building</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+  </div>
+
+  <main class="wrap" id="main">
+    <section class="hero" aria-labelledby="headline">
+      <p class="pill">
+        <span class="pill-dot" aria-hidden="true"></span>
+        Open to a student software role · Haifa area
+      </p>
+
+      <h1 class="headline" id="headline">
+        Built against <span class="headline-accent">something real</span>.
+      </h1>
+
+      <p class="lede">
+        Computer science student. I build systems whose ground truth comes from
+        something real: SI constants, the maritime collision rules, database
+        constraints, the filesystem.
+      </p>
+
+      <p class="actions">
+        <a class="button button-solid" href="#work">See the work</a>
+        <a class="button button-quiet" href="#contact">Get in touch</a>
+      </p>
+    </section>
+
+    <ul class="stats">
+      {
+        stats.map((stat) => (
+          <li>
+            <span class="stat-figure">{stat.figure}</span>
+            <span class="stat-label">{stat.label}</span>
+          </li>
+        ))
+      }
     </ul>
+
+    <section class="section" id="work" aria-labelledby="work-title">
+      <h2 class="section-title" id="work-title">Selected work</h2>
+      <p class="section-note">
+        Two have case studies. The other two link to their source.
+      </p>
+      <ul class="project-grid">
+        {projects.map((project) => <ProjectCard project={project} level={3} />)}
+      </ul>
+    </section>
+
+    <section class="section" id="building" aria-labelledby="building-title">
+      <h2 class="section-title" id="building-title">Currently building</h2>
+      <div class="panel">
+        <h3 class="panel-name">VelaScan</h3>
+        <p>
+          Not shipped, and not yet written up. There is nothing to link to,
+          which is the honest state of it; when there is, it will appear above
+          with the others.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="about" aria-labelledby="about-title">
+      <h2 class="section-title" id="about-title">About</h2>
+      <p>
+        I write software that has to agree with something outside itself. That
+        is a narrower constraint than it sounds: a simulation can be wrong in a
+        way no test catches unless the test knows what the real answer is, so I
+        tend to reach for the cases where a constant, a published rule or a
+        database can hold the code to account.
+      </p>
+      <p>
+        It also decides how I build. Lodestar recomputes known quantities
+        through the same code paths the simulations use; Vela Sea keeps its
+        simulation layer free of the drawing layer so the whole game can be
+        played by a bot with no window open. Both are the same idea: make the
+        thing checkable, then check it.
+      </p>
+      <dl class="facts">
+        <dt>Studying</dt>
+        <dd>Computer science</dd>
+        <dt>Currently</dt>
+        <dd>VelaScan</dd>
+        <dt>Languages</dt>
+        <dd>TypeScript, Python, SQL</dd>
+        <dt>Looking for</dt>
+        <dd>A student software role in the Haifa area</dd>
+      </dl>
+    </section>
+
+    <section class="section" id="contact" aria-labelledby="contact-title">
+      <h2 class="section-title" id="contact-title">Contact</h2>
+      <p>
+        The fastest way to reach me is email. Everything I have written that is
+        public is on GitHub.
+      </p>
+      <p class="contact-actions">
+        <a class="button button-solid" href={`mailto:${email}`}>{email}</a>
+        <a class="button button-quiet" href="https://github.com/velawind" rel="me">
+          github.com/velawind
+        </a>
+      </p>
+    </section>
   </main>
 </Base>

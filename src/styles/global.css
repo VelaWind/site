@@ -100,6 +100,8 @@
   --text-xl: calc(var(--text-l) * var(--type-ratio));
   --text-2xl: calc(var(--text-xl) * var(--type-ratio));
   --text-3xl: calc(var(--text-2xl) * var(--type-ratio));
+  /* One step past the old top of the scale, for the home headline only. */
+  --text-4xl: calc(var(--text-3xl) * var(--type-ratio));
 
   --leading-body: 1.6;
   --leading-tight: 1.15;
@@ -138,6 +140,13 @@
    * own line each, which is the point at which one wider card beats two.
    */
   --card-min: 20.5rem;
+
+  /*
+   * The narrowest a stat may be. Smaller than a card because a stat is two
+   * short lines rather than a paragraph, so four fit a laptop and two fit a
+   * phone instead of stacking into a column of four.
+   */
+  --stat-min: 9rem;
 
   /*
    * Corner radii come off the spacing scale rather than being a second set of
@@ -259,6 +268,7 @@ h3,
 p,
 ul,
 ol,
+dl,
 figure {
   /*
    * Margins are zeroed here and reinstated by the flow rule below, so that the
@@ -333,10 +343,25 @@ strong {
  * a block that wants more room says so once, in its own rule, by setting
  * --flow-space. Section spacing is therefore a property of the section rather
  * than of every element that might precede it.
+ *
+ * One rule about which of the two a block uses. A container sets its own gap
+ * with a plain margin, never with --flow-space, because a custom property
+ * inherits: a container that asks for --space-2xl above itself hands the same
+ * --space-2xl to every child inside it. That is what .section did to its own
+ * paragraphs, and what .readme has been doing to the fetched README's
+ * paragraphs since it was written. --flow-space is for leaves.
+ *
+ * Registering the property with `inherits: false` would fix it in one line and
+ * was tried. It cannot work here: a registered property's initial-value has to
+ * be computationally independent, so it cannot be 1rem, and hardcoding 16px
+ * would quietly be the wrong gap for anyone whose browser font size is not the
+ * default. A plain margin on three containers costs three rules and no caveat.
  */
 .page > * + *,
-.home > * + *,
 .wrap > * + *,
+.hero > * + *,
+.section > * + *,
+.panel > * + *,
 .readme > * + * {
   margin-block-start: var(--flow-space, var(--space-s));
 }
@@ -438,6 +463,29 @@ a:focus-visible,
   background: color-mix(in oklch, var(--accent) 22%, transparent);
 }
 
+/* -------------------------------------------------------------- utilities */
+
+/*
+ * Text for a screen reader and not for the eye. Clipped rather than hidden,
+ * because display:none and visibility:hidden take it out of the accessibility
+ * tree as well, which is the opposite of the point.
+ *
+ * The 1px box here is the one place a bare pixel is not a design decision that
+ * should have come off the scale: it is the smallest box that keeps the node
+ * rendered and therefore announced. Zero would drop it from the tree again.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --------------------------------------------------------------- skip link */
 
 .skip {
@@ -527,15 +575,17 @@ hr {
   font-size: var(--text-s);
 }
 
+.page > .readme {
+  margin-block-start: var(--space-l);
+}
+
 .readme {
-  --flow-space: var(--space-l);
   border-top: 1px solid var(--rule);
   padding-top: var(--space-xs);
 }
 
 /* The first heading of the fetched section sits under that rule, not away from it. */
 .readme > :first-child {
-  --flow-space: var(--space-m);
   margin-block-start: var(--space-m);
 }
 
@@ -643,7 +693,6 @@ hr {
   gap: var(--space-m);
   list-style: none;
   padding: 0;
-  margin: 0;
 }
 
 /*
@@ -751,9 +800,30 @@ hr {
  * still ahead. `margin-top: auto` holds it on the bottom edge so the badges of
  * two cards in a row line up even when their blurbs differ in length.
  */
-.card-status {
+/*
+ * The bottom line of a card: what state the thing is in, and where the link
+ * goes. `margin-top: auto` holds it on the bottom edge so the feet of two
+ * cards in a row line up even when their blurbs differ in length.
+ */
+.card-foot {
   margin-top: auto;
-  align-self: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+/*
+ * Said in words because a card that links off-site is making a different
+ * promise from one that links to a case study, and a reader deserves to know
+ * which before clicking rather than after.
+ */
+.card-where {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+.card-status {
   padding: var(--space-3xs) var(--space-2xs);
   border: 1px solid color-mix(in oklab, var(--status-color) 45%, var(--bg));
   border-radius: var(--radius-chip);
@@ -773,44 +843,322 @@ hr {
 /* ------------------------------------------------------------------- home */
 
 /*
- * The home page is short, so it is set large: the name at the top of the type
- * scale, the line under it one step above body, and the links held apart by
- * the widest gaps on the site. Presence comes from the size of the type and
- * the space around it, not from anything added to the page.
+ * The home page runs on the wide track, and every block of running text on it
+ * is pulled back to the prose measure individually. That is the wrong way
+ * round from the rest of the site on purpose: here the default is the layout
+ * and the exception is the paragraph, so a new section starts wide and has to
+ * ask to be narrow, rather than starting narrow and being widened by accident.
  */
-.home {
-  width: 100%;
-  max-width: var(--measure);
-  margin: 0 auto;
-  padding: var(--space-2xl) 0 var(--space-xl);
+
+/* --------------------------------------------------------- site header --- */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  padding-block: var(--space-m);
 }
 
-.home h1 {
-  font-size: clamp(var(--text-xl), 1.2rem + 4vw, var(--text-3xl));
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--text-l);
+  font-weight: 660;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
 }
 
 /*
- * ch is relative to the lede's own 21px, so 42ch is about 445px: a measure of
- * its own, narrower than the 544px column the links sit in. That is what keeps
- * a four-line sentence subordinate to the name above it. The 24ch it had
- * before was cut for a four-word placeholder and broke this sentence into a
- * ragged stack.
+ * The orb. A flat circle in the accent with a soft ring around it, and it does
+ * not move: the page already has one animated element and a second would make
+ * the header compete with it for attention. Decorative, so it is hidden from
+ * assistive technology and the wordmark reads as the word alone.
  */
-.home .lede {
-  --flow-space: var(--space-xs);
-  max-width: 42ch;
+.orb {
+  width: var(--space-xs);
+  height: var(--space-xs);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 var(--space-3xs) color-mix(in oklab, var(--accent) 22%, transparent);
+  flex: none;
 }
 
-.home ul {
-  --flow-space: var(--space-xl);
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
   list-style: none;
   padding: 0;
-  border-top: 1px solid var(--rule);
-  padding-top: var(--space-m);
+  margin: 0;
 }
 
-.home li {
-  margin-bottom: var(--space-xs);
+.site-nav li {
+  margin: 0;
+}
+
+.site-nav a {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- hero --- */
+
+.hero {
+  padding-block: var(--space-2xl) var(--space-xl);
+}
+
+/*
+ * The availability pill. The dot is decoration and carries no meaning: the
+ * sentence beside it says the whole thing, so a reader who cannot see the
+ * colour or the pulse loses nothing.
+ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid color-mix(in oklab, var(--live) 45%, var(--bg));
+  border-radius: var(--radius-chip);
+  background: var(--bg);
+  color: var(--live);
+  font-size: var(--text-s);
+}
+
+.pill-dot {
+  width: var(--space-2xs);
+  height: var(--space-2xs);
+  border-radius: 50%;
+  background: currentcolor;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pill-dot {
+    animation: pulse-dot 2.4s ease-in-out infinite;
+  }
+}
+
+/*
+ * Opacity only. A dot that also scales makes the pill's text reflow on some
+ * platforms, and the point is a heartbeat, not a size change.
+ */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.headline {
+  --flow-space: var(--space-m);
+  font-size: clamp(var(--text-2xl), 1.3rem + 5.6vw, var(--text-4xl));
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  max-width: 18ch;
+}
+
+/*
+ * The gradient phrase. The default is a solid --text, and only a browser that
+ * confirms it can clip a background to the glyphs swaps in the gradient. Doing
+ * it the other way round, transparent text with a gradient behind it, renders
+ * an invisible headline everywhere the clip is unsupported, which is the whole
+ * risk of this effect.
+ */
+.headline-accent {
+  color: var(--text);
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .headline-accent {
+    background-image: linear-gradient(100deg, var(--star), var(--accent), var(--vio));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/*
+ * Forced-colours mode replaces the palette with the reader's own, and a
+ * transparent fill over a background image survives that as nothing at all.
+ */
+@media (forced-colors: active) {
+  .headline-accent {
+    background-image: none;
+    color: CanvasText;
+  }
+}
+
+.hero .lede {
+  --flow-space: var(--space-m);
+  max-width: 46ch;
+}
+
+.actions {
+  --flow-space: var(--space-l);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* -------------------------------------------------------------- buttons --- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-xs) var(--space-m);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-chip);
+  font-size: var(--text-m);
+  text-decoration: none;
+}
+
+/* Filled: --bg on --accent is the same pair as --accent on --bg, reversed. */
+.button-solid {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.button-quiet {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button {
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+}
+
+.button-solid:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--bg);
+}
+
+.button-quiet:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+/* --------------------------------------------------------------- stats --- */
+
+/*
+ * Four measured numbers, not a scoreboard. They are set in the body colour
+ * rather than an accent because the palette gives every colour one meaning and
+ * "a number" is not one of them; three of these four are Lodestar's, and
+ * colouring them --star would say the fourth was too.
+ */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--stat-min), 100%), 1fr));
+  gap: var(--space-m);
+  list-style: none;
+  padding: var(--space-m) 0;
+  border-block: 1px solid var(--rule);
+}
+
+.stats li {
+  margin: 0;
+}
+
+.stat-figure {
+  display: block;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  display: block;
+  margin-top: var(--space-3xs);
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------ sections --- */
+
+.wrap > .section {
+  margin-block-start: var(--space-2xl);
+}
+
+.section-title {
+  --flow-space: 0;
+}
+
+/* Running text on the wide track is pulled back to the reading measure. */
+.section > p,
+.section dd,
+.panel > p {
+  max-width: var(--measure);
+}
+
+.section-note {
+  --flow-space: var(--space-2xs);
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------- currently building --- */
+
+/*
+ * Dashed, because the border is doing the same job the --vio token does: this
+ * is not finished. A solid panel would look like the cards above it and read
+ * as another shipped thing.
+ */
+.section > .panel {
+  margin-block-start: var(--space-m);
+}
+
+.panel {
+  padding: var(--space-m);
+  border: 1px dashed color-mix(in oklab, var(--vio) 55%, var(--bg));
+  border-radius: var(--radius-panel);
+}
+
+.panel-name {
+  --flow-space: 0;
+  color: var(--vio);
+}
+
+/* --------------------------------------------------------------- about --- */
+
+.facts {
+  --flow-space: var(--space-m);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2xs) var(--space-m);
+}
+
+.facts dt {
+  font-size: var(--text-s);
+  color: var(--text-muted);
+  /* Aligns the label's baseline with the value beside it, which is a step up. */
+  padding-top: var(--space-3xs);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- contact --- */
+
+.contact-actions {
+  --flow-space: var(--space-m);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
 }
