@@ -366,9 +366,15 @@ body {
  * value to move from, so this costs nothing on load.
  */
 @media (prefers-reduced-motion: no-preference) {
-  *,
-  *::before,
-  *::after {
+  /*
+   * Scoped to what renders. The bare `*` also matched <head>, <meta> and
+   * <title>: 207 elements reported a transition on the home page, most of them
+   * incapable of painting anything.
+   */
+  body,
+  body *,
+  body *::before,
+  body *::after {
     transition: background-color 400ms ease, border-color 400ms ease,
       color 400ms ease;
   }
@@ -957,7 +963,13 @@ hr {
  * a reader is never reading text that is still arriving.
  */
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
+  /*
+   * `screen and` is load-bearing. Paper cannot be scrolled, so a view()
+   * timeline never advances there and every section below the first screen
+   * printed at opacity 0. Measured under print media before this: four of five
+   * .reveal blocks at 0.00.
+   */
+  @media screen and (prefers-reduced-motion: no-preference) {
     .reveal {
       animation-name: reveal;
       animation-timing-function: ease-out;
@@ -1706,4 +1718,21 @@ hr {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
+}
+
+/* ------------------------------------------------------------------ print */
+
+/*
+ * What goes on paper is the words. The sky, the progress bar, the two corner
+ * controls and the palette are all screen furniture: fixed, decorative, or
+ * unusable once printed. The reveal is handled at its own rule, which is
+ * scoped to screen so a section cannot print blank.
+ */
+@media print {
+  #sky,
+  .reading-progress,
+  .controls,
+  .palette {
+    display: none;
+  }
 }
