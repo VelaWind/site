@@ -149,6 +149,13 @@
   --stat-min: 9rem;
 
   /*
+   * How far the card spotlight reaches. Smaller than a card at every breakpoint,
+   * so it reads as a light following the cursor rather than as the whole card
+   * changing colour.
+   */
+  --spotlight: 18rem;
+
+  /*
    * Corner radii come off the spacing scale rather than being a second set of
    * numbers nobody can derive: the smallest gap in the system rounds a chip,
    * the next one up rounds a panel.
@@ -714,6 +721,25 @@ hr {
   overflow: hidden;
   /* The global li rule spaces list items; the grid gap does that here. */
   margin: 0;
+
+  /*
+   * The card's colour for interaction, overridden inline by a project that has
+   * one of its own. This is deliberately not --card-accent: that property
+   * identifies the project and is absent on purpose for a project with no hue,
+   * whereas hover feedback is the site talking about itself, and the site's own
+   * colour for that is the accent. So a project without a hue glows blue like
+   * every other interactive thing here, rather than borrowing a meaning.
+   */
+  --c: var(--accent);
+
+  /*
+   * Makes the card a stacking context so the spotlight below can sit at
+   * z-index: -1, which is the only position that is above the card's own
+   * background and still beneath its text. Painting the spotlight over the
+   * content instead would wash 20% of an accent across the link and the blurb
+   * and take their contrast with it.
+   */
+  isolation: isolate;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -723,14 +749,81 @@ hr {
 }
 
 /*
- * Hover and keyboard focus get the same treatment, and it is a colour change
- * only: nothing grows, lifts or shadows. :has() is an enhancement here rather
- * than a requirement, because the name keeps the site-wide focus ring either
- * way, so a browser without it loses a tint and not the ability to see focus.
+ * Hover and keyboard focus both take the card's own colour. This one rule sits
+ * outside every guard below, so a reader who has asked for no motion, or who is
+ * on a touch screen, still gets the whole of the hover feedback the card had
+ * before the spotlight existed. :has() is an enhancement rather than a
+ * requirement: the name keeps the site-wide focus ring either way, so a browser
+ * without it loses a tint and not the ability to see focus.
  */
 .card:hover,
 .card:has(a:focus-visible) {
-  border-color: var(--accent);
+  border-color: var(--c);
+}
+
+/*
+ * The spotlight, the lift and the shadow.
+ *
+ * Three conditions, and each one is doing a job:
+ *   prefers-reduced-motion  a reader who asked for stillness gets the border
+ *                           colour change above and nothing that moves.
+ *   hover: hover            a touch screen has no hover to leave, so :hover
+ *                           there latches after a tap and the card stays lifted
+ *                           and lit until something else is tapped.
+ *   pointer: fine           the same gate the script uses, so the styles and the
+ *                           thing that feeds them turn on together rather than
+ *                           leaving a lit card no pointer is moving over.
+ *
+ * With any of them unmet the card is exactly what it was: a bordered panel that
+ * changes border colour on hover and focus.
+ */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .card {
+    transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    /*
+     * -1px is the border width, so the light reaches the edge rather than
+     * stopping a hairline short of it. The card's overflow: hidden clips it
+     * back to the padding box in practice; this is what makes it right if that
+     * clip ever goes.
+     */
+    inset: -1px;
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    /*
+     * Position defaults to the middle, which is what a reader with JavaScript
+     * turned off sees: a centred glow on hover instead of a tracking one. The
+     * script only ever refines this.
+     */
+    background: radial-gradient(
+      var(--spotlight) var(--spotlight) at var(--px, 50%) var(--py, 50%),
+      color-mix(in oklch, var(--c) 20%, transparent),
+      transparent 65%
+    );
+    /* The pointer must reach the card, not this. */
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  .card:hover::before {
+    opacity: 1;
+  }
+
+  .card:hover {
+    /*
+     * The scale's smallest step rather than a bare 4px. It is 4.7px, which is
+     * within a pixel of the intent and inside the rule that every size on this
+     * site comes off a scale.
+     */
+    transform: translateY(calc(var(--space-3xs) * -1));
+    box-shadow: 0 var(--space-2xs) var(--space-m)
+      color-mix(in oklab, var(--c) 22%, transparent);
+  }
 }
 
 .card-name a::after {
@@ -752,7 +845,16 @@ hr {
  */
 .card-media {
   aspect-ratio: 16 / 9;
-  background: color-mix(in oklab, var(--card-accent) 18%, var(--surface));
+  /*
+   * A translucent tint rather than an opaque mix with --surface, and the
+   * difference matters for one reason: the panel is a non-positioned block, so
+   * its background paints after the card's z-index: -1 spotlight. Opaque, it
+   * hid the spotlight everywhere it covered, which is the top half of the card,
+   * and the light appeared to switch off as the cursor crossed into it.
+   * Translucent, the spotlight shows through. Over the card's own --surface the
+   * two are within a couple of RGB units of each other unhovered.
+   */
+  background: color-mix(in oklch, var(--card-accent) 18%, transparent);
   border-bottom: 1px solid var(--border);
 }
 

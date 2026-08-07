@@ -24,7 +24,7 @@ const Heading = `h${level}` as 'h2' | 'h3';
 const away = !project.caseStudy;
 ---
 
-<li class="card">
+<li class="card" style={project.accent ? `--c: var(--${project.accent})` : undefined}>
   <div
     class="card-media"
     style={project.accent ? `--card-accent: var(--${project.accent})` : undefined}
@@ -55,3 +55,39 @@ const away = !project.caseStudy;
     </p>
   </div>
 </li>
+
+<script>
+  /*
+   * The one piece of script on this site, and the reason is that there is no
+   * CSS way to ask where the pointer is. It writes two custom properties and
+   * does nothing else: no state, no classes, no layout reads beyond the card's
+   * own box.
+   *
+   * The stylesheet, not this file, decides whether any of it is visible. Every
+   * rule it feeds sits behind prefers-reduced-motion, hover and pointer: fine,
+   * so a reader who has asked for stillness sees nothing move even while this
+   * runs, and a reader with JavaScript off gets the centred fallback position
+   * baked into the gradient.
+   *
+   * pointer: fine is checked before listening because a touch screen has no
+   * pointer to follow, and a tap would otherwise leave a card lit with a
+   * spotlight frozen wherever the finger last was.
+   */
+  if (matchMedia('(pointer: fine)').matches) {
+    for (const card of document.querySelectorAll('.card')) {
+      if (!(card instanceof HTMLElement)) continue;
+      card.addEventListener(
+        'pointermove',
+        (event) => {
+          // Read the box per event rather than caching it: cards reflow on
+          // resize and on a grid column change, and a cached rect would put the
+          // light in the wrong place with nothing to say it had.
+          const box = card.getBoundingClientRect();
+          card.style.setProperty('--px', `${((event.clientX - box.left) / box.width) * 100}%`);
+          card.style.setProperty('--py', `${((event.clientY - box.top) / box.height) * 100}%`);
+        },
+        { passive: true },
+      );
+    }
+  }
+</script>
