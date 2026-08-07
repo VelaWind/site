@@ -599,13 +599,21 @@ hr {
 /* --------------------------------------------------- reading progress bar */
 
 /*
- * Case study only, and entirely decorative: aria-hidden, and it tracks the
- * scroll position that the scrollbar already reports.
+ * On every route, and entirely decorative: aria-hidden, and it reports the
+ * scroll position the scrollbar already reports.
  *
- * It is scaled to nothing by default and grown by a scroll-driven animation,
- * so a browser without `animation-timeline` (or a reader who has asked for no
- * motion) gets an element that is present, fixed, and invisible, rather than a
- * full-width bar stuck at 100%.
+ * Hidden by default and revealed by a scroll-driven animation, so a browser
+ * without `animation-timeline`, a reader who has asked for no motion, and a
+ * page too short to scroll all get an element that is present, fixed and
+ * invisible, rather than a full-width bar stuck at 100%.
+ *
+ * It is revealed by clipping rather than by scaling, and the gradient is the
+ * reason. `transform: scaleX()` scales what has been painted, so a gradient
+ * squashes with the bar: at 5% scrolled you would see the whole star-to-violet
+ * ramp crushed into a 5% sliver, and the colour at the leading edge would be
+ * violet from the first pixel of scrolling. Clipping reveals the gradient in
+ * place, so the colour under the leading edge means how far down the page it
+ * is, which is the only reason to give a progress bar a gradient at all.
  */
 .reading-progress {
   position: fixed;
@@ -613,9 +621,8 @@ hr {
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--star), var(--accent), var(--vio));
+  clip-path: inset(0 100% 0 0);
   pointer-events: none;
   z-index: 2;
 }
@@ -634,11 +641,58 @@ hr {
 
 @keyframes grow-reading-progress {
   from {
-    transform: scaleX(0);
+    clip-path: inset(0 100% 0 0);
   }
 
   to {
-    transform: scaleX(1);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* --------------------------------------------------------------- reveal --- */
+
+/*
+ * Sections fade and rise as they come into view.
+ *
+ * The safety property matters more than the effect: nothing outside the guards
+ * below sets an opacity or a transform, so the class on its own does nothing at
+ * all. A browser without scroll-driven animations, and a reader who has asked
+ * for no motion, get the section exactly where it belongs at full opacity,
+ * because there is no state to fall back to. Putting `opacity: 0` in the base
+ * rule and animating it up is the version of this that leaves a page blank
+ * everywhere the timeline is unsupported, and it is the obvious way to write it.
+ *
+ * The range ends at `entry 50%`, halfway through the section entering, so a
+ * section is fully opaque well before it reaches the middle of the screen and
+ * a reader is never reading text that is still arriving.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation-name: reveal;
+      animation-timing-function: ease-out;
+      /*
+       * `both` so the section holds the finished state after its range ends
+       * rather than snapping back, and holds the start state before it begins.
+       * A section already on screen at load has finished entering, so the fill
+       * puts it at the end of the animation, not the beginning.
+       */
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 50%;
+    }
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-m));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -895,13 +949,6 @@ hr {
   color: var(--text-muted);
 }
 
-/*
- * The badge says whether the thing itself can be opened, which is a different
- * question from what the project is, so it takes its colour from the state and
- * never from the project: --live for anything reachable now, --vio for anything
- * still ahead. `margin-top: auto` holds it on the bottom edge so the badges of
- * two cards in a row line up even when their blurbs differ in length.
- */
 /*
  * The bottom line of a card: what state the thing is in, and where the link
  * goes. `margin-top: auto` holds it on the bottom edge so the feet of two

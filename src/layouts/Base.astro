@@ -39,6 +39,16 @@ const aiDisclosure =
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
+    {/*
+      Decorative only: it reports the scroll position the scrollbar already
+      shows, so it is hidden from assistive technology. It lives here rather
+      than in the pages that wanted it because every route can be scrolled, and
+      a bar that appears on two of four reads as a bug on the other two. On a
+      page short enough not to scroll, the timeline never starts and it stays
+      invisible. Driven entirely by `animation-timeline: scroll()` in the
+      stylesheet; nothing here needs script.
+    */}
+    <div class="reading-progress" aria-hidden="true"></div>
     <slot />
     {/*
       The disclosure only. The name is the h1 on the home page and the eyebrow
