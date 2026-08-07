@@ -40,9 +40,12 @@ const aiDisclosure =
   <body>
     <a class="skip" href="#main">Skip to content</a>
     <slot />
+    {/*
+      The disclosure only. The name is the h1 on the home page and the eyebrow
+      on every other route, so a line here was a third copy of it.
+    */}
     <footer class="site-footer">
       <p>{aiDisclosure}</p>
-      <p>VelaWind</p>
     </footer>
   </body>
 </html>

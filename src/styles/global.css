@@ -129,6 +129,24 @@ body {
   line-height: var(--leading-body);
   /* 1rem of padding keeps the measure off the bezel at 320px. */
   padding: 0 var(--space-s);
+
+  /*
+   * A column at least as tall as the viewport, so the footer can be pushed to
+   * the bottom of a short page (see .site-footer) instead of stopping halfway
+   * down with nothing under it.
+   *
+   * This is not vertical centring: the content still starts at the top and the
+   * space collects between the content and the footer. On a page taller than
+   * the viewport there is no free space to absorb, so the footer simply
+   * follows the content, which is what it did before.
+   *
+   * dvh rather than vh so a mobile URL bar appearing does not push the footer
+   * into a scroll; the vh line is the fallback for anything that predates it.
+   */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ------------------------------------------------------------- typography */
@@ -443,16 +461,18 @@ hr {
 
 .site-footer {
   max-width: var(--measure);
-  margin: 0 auto;
+  /*
+   * `auto` takes whatever vertical space is left in the body column, which on
+   * a short page is the gap between the content and the bottom of the viewport
+   * and on a long page is nothing at all.
+   */
+  margin-block-start: auto;
+  margin-inline: auto;
   padding: var(--space-m) 0 var(--space-xl);
   border-top: 1px solid var(--rule);
   color: var(--text-muted);
   font-size: var(--text-s);
   text-wrap: pretty;
-}
-
-.site-footer p + p {
-  margin-top: var(--space-2xs);
 }
 
 /* --------------------------------------------------------------- projects */
@@ -503,9 +523,16 @@ hr {
   letter-spacing: -0.03em;
 }
 
+/*
+ * ch is relative to the lede's own 21px, so 42ch is about 445px: a measure of
+ * its own, narrower than the 544px column the links sit in. That is what keeps
+ * a four-line sentence subordinate to the name above it. The 24ch it had
+ * before was cut for a four-word placeholder and broke this sentence into a
+ * ragged stack.
+ */
 .home .lede {
   --flow-space: var(--space-xs);
-  max-width: 24ch;
+  max-width: 42ch;
 }
 
 .home ul {
