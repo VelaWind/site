@@ -21,12 +21,55 @@
   color-scheme: light dark;
 
   /*
-   * One accent, hue 250, used for links, focus rings, rules and the reading
-   * progress bar. A second accent would be a second thing to justify, and
-   * there is nothing on this site that two colours would tell apart.
+   * Hue is what identifies a colour, so it is declared once as a bare number
+   * and both schemes reach for the same one. A scheme may move lightness and
+   * chroma; moving hue would make light and dark two different colours sharing
+   * a token name, which is the failure the token was supposed to prevent.
    */
-  --accent: oklch(48% 0.115 250);
-  --accent-strong: oklch(37% 0.1 250);
+  --hue-sky: 250;
+  --hue-star: 78;
+  --hue-sea: 195;
+  --hue-live: 150;
+  --hue-vio: 305;
+
+  /*
+   * Five colours, and each one means exactly one thing.
+   *
+   * This used to be a single accent, on the argument that a second colour would
+   * be a second thing to justify. The justification is that the site now has
+   * distinctions worth carrying: which project a page belongs to, whether a
+   * thing can be opened right now, and whether it exists yet. Those are facts a
+   * reader currently has to read a sentence to learn.
+   *
+   * What keeps that from becoming decoration is the one-meaning rule. A reader
+   * should be able to learn a colour from a single encounter and have it hold
+   * everywhere on the site. A colour doing two unrelated jobs teaches nothing,
+   * and is worse than leaving both things uncoloured, so the set below is
+   * closed: a new distinction gets a new token or it gets no colour.
+   *
+   * Lightness is what keeps them a set rather than five loud choices. Light
+   * scheme 48-52%, dark scheme 80-84%, so none outweighs its neighbours or
+   * competes with the prose. Chroma is then whatever sRGB still has at that
+   * lightness, which is why the cyan is the palest number here and the violet
+   * the strongest: they are equally prominent, not equally saturated.
+   *
+   * Every one of them clears 4.5:1 on --bg in both schemes; see the ratios in
+   * the dark block below.
+   */
+  /* Sky: links, focus rings, hairline rules, the reading progress bar. The one
+     colour that is about the site's structure rather than about its subjects,
+     which is why it keeps the --accent name and every link on every page. */
+  --accent: oklch(48% 0.115 var(--hue-sky));
+  --accent-strong: oklch(37% 0.1 var(--hue-sky));
+
+  /* Lodestar: that case study, and the measured figures quoted from it. */
+  --star: oklch(52% 0.105 var(--hue-star));
+  /* Vela Sea: that case study, and nothing else. */
+  --sea: oklch(50% 0.082 var(--hue-sea));
+  /* Live: a thing that can be opened now — playable, deployed, open to work. */
+  --live: oklch(50% 0.12 var(--hue-live));
+  /* Ahead: what is not shipped yet, VelaScan among it. Never used for done work. */
+  --vio: oklch(50% 0.16 var(--hue-vio));
 
   --bg: oklch(98.6% 0.004 95);
   --surface: oklch(96.2% 0.006 95);
@@ -41,7 +84,7 @@
    * interpolates hue the polar way: mixing a blue with this warm grey travels
    * through green, and the hairlines came out sage.
    */
-  --rule: oklch(84% 0.035 250);
+  --rule: oklch(84% 0.035 var(--hue-sky));
 
   /*
    * Type scale: 1.25 (major third) from a 17px base. 17px because 16 is the
@@ -89,12 +132,24 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /*
-     * The dark accent is the same hue lifted to 80% lightness rather than the
-     * light one on a dark field: a 48% blue on a 17% ground is legible but
-     * reads as a hole in the page.
+     * The same five hues lifted, not five new colours. A 48% blue on a 17%
+     * ground is legible and reads as a hole in the page, so every colour moves
+     * to the top of the range instead: 80-84% lightness, where a dark scheme
+     * puts its foreground.
+     *
+     * Measured ratios against --bg (#0d1116), rendered pixels not estimates:
+     * accent 10.21:1, star 11.44:1, sea 11.29:1, live 11.37:1, vio 9.73:1.
+     * The light scheme runs tighter, 5.38:1 to 6.27:1 on #fbfaf7, because a
+     * colour dark enough to read on near-white has less room above the floor
+     * than a pale one has below it.
      */
-    --accent: oklch(80% 0.095 250);
-    --accent-strong: oklch(88% 0.06 250);
+    --accent: oklch(80% 0.095 var(--hue-sky));
+    --accent-strong: oklch(88% 0.06 var(--hue-sky));
+
+    --star: oklch(84% 0.135 var(--hue-star));
+    --sea: oklch(82% 0.1 var(--hue-sea));
+    --live: oklch(82% 0.125 var(--hue-live));
+    --vio: oklch(80% 0.125 var(--hue-vio));
 
     --bg: oklch(17.5% 0.012 250);
     --surface: oklch(22% 0.014 250);
@@ -103,7 +158,7 @@
     --border: oklch(34% 0.017 250);
     --code-bg: oklch(23% 0.014 250);
 
-    --rule: oklch(38% 0.035 250);
+    --rule: oklch(38% 0.035 var(--hue-sky));
   }
 }
 
