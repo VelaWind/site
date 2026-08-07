@@ -11,10 +11,7 @@
 import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import { projects } from '../lib/projects';
-
-// PLACEHOLDER: replace with the real handle-based address before launch.
-// It is the only invented value on the site.
-const email = 'hello@velawind.dev';
+import { EMAIL, GITHUB } from '../lib/site';
 
 /*
  * Every figure here was read out of a repository rather than remembered:
@@ -144,8 +141,8 @@ const stats = [
         public is on GitHub.
       </p>
       <p class="contact-actions">
-        <a class="button button-solid" href={`mailto:${email}`}>{email}</a>
-        <a class="button button-quiet" href="https://github.com/velawind" rel="me">
+        <a class="button button-solid" href={`mailto:${EMAIL}`}>{EMAIL}</a>
+        <a class="button button-quiet" href={GITHUB} rel="me">
           github.com/velawind
         </a>
       </p>

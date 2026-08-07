@@ -590,14 +590,22 @@ a:focus-visible,
  * rather than painted and dead. Because the flag is set before first paint,
  * there is no moment where it appears and then vanishes.
  */
+.controls {
+  position: fixed;
+  top: var(--space-s);
+  right: var(--space-s);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  /* Above the page, below the skip link, which has to win when focused. */
+  z-index: 2;
+}
+
 .theme-toggle {
   display: none;
 }
 
 :root[data-js] .theme-toggle {
-  position: fixed;
-  top: var(--space-s);
-  right: var(--space-s);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -609,8 +617,6 @@ a:focus-visible,
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
-  /* Above the page, below the skip link, which has to win when focused. */
-  z-index: 2;
 }
 
 .theme-toggle:hover {
@@ -638,6 +644,124 @@ a:focus-visible,
 :root[data-theme='light'] .theme-toggle [data-glyph='light'],
 :root[data-theme='dark'] .theme-toggle [data-glyph='dark'] {
   display: block;
+}
+
+/*
+ * The palette trigger. Hidden in the markup and revealed by the script, for the
+ * same reason as the toggle beside it: it does nothing without script, and the
+ * legend on it cannot be decided at build time because it depends on which
+ * keyboard the reader has.
+ */
+.palette-open {
+  height: var(--control-size);
+  padding-inline: var(--space-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-s);
+  cursor: pointer;
+}
+
+.palette-open:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------- command palette */
+
+/*
+ * A native <dialog>, so the modality is the browser's rather than this
+ * stylesheet's: the background is inert, Escape closes, focus is trapped and
+ * returned. Closed, a dialog is display: none, so with script off it is never
+ * painted and nothing here needs a separate hiding rule.
+ */
+.palette {
+  width: min(32rem, calc(100vw - var(--space-m)));
+  margin-inline: auto;
+  /* Near the top rather than centred: a palette is a thing you type into, and
+     it should not move the reader's eye to the middle of the screen to do it. */
+  margin-top: 12vh;
+  padding: var(--space-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.palette::backdrop {
+  background: color-mix(in oklab, black 45%, transparent);
+}
+
+.palette-input {
+  width: 100%;
+  padding: var(--space-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.palette-list {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--space-2xs);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.palette-list li {
+  margin: 0;
+}
+
+.palette-list [role='option'] {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  width: 100%;
+  padding: var(--space-2xs) var(--space-xs);
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/*
+ * Selection is an attribute, not a class, so the thing the script writes for
+ * assistive technology is the same thing the eye follows. They cannot disagree.
+ */
+.palette-list [aria-selected='true'] {
+  background: var(--bg);
+  color: var(--accent);
+}
+
+.palette-hint {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+
+.palette-empty {
+  padding: var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+
+/* Announcements only; it has no size until the script writes into it. */
+.palette-status {
+  padding-inline: var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+
+.palette-status:empty {
+  display: none;
 }
 
 /* --------------------------------------------------------------- skip link */
@@ -878,6 +1002,10 @@ hr {
   color: var(--text-muted);
   font-size: var(--text-s);
   text-wrap: pretty;
+}
+
+.site-footer-links {
+  margin-top: var(--space-2xs);
 }
 
 /* --------------------------------------------------------------- projects */

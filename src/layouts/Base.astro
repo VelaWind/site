@@ -6,6 +6,7 @@
  * the rendered output is HTML and CSS with no script tag of any kind.
  */
 import '../styles/global.css';
+import { EMAIL, GITHUB } from '../lib/site';
 
 interface Props {
   title: string;
@@ -99,6 +100,13 @@ const aiDisclosure =
       looking at. It is rendered here for the no-choice state and corrected by
       the script below when a stored choice says otherwise.
     */}
+    {/*
+      The two controls that belong to the site rather than to a page, so they
+      sit together on every route. The home page is the only one with a header
+      to put them in; everywhere else there is none, and a control that appears
+      on one route in four is worse than one that is always in the same corner.
+    */}
+    <div class="controls">
     <button
       class="theme-toggle"
       type="button"
@@ -121,13 +129,73 @@ const aiDisclosure =
       </svg>
     </button>
 
+      <button class="palette-open" type="button" aria-haspopup="dialog" hidden>
+        <span class="palette-key" data-mac="⌘K" data-other="Ctrl K">⌘K</span>
+      </button>
+    </div>
+
+    {/*
+      The command palette. Every row is an ordinary link or an ordinary button,
+      not a div with a click handler, so activating one is the browser doing
+      what it always does and the script never has to reimplement navigation.
+
+      It is a shortcut and never the only way. Each row has a plain equivalent
+      in the page: the section links are the home nav, the address and the
+      GitHub link are both in the contact section, and the theme row presses the
+      button next to this one. Copying to the clipboard is the single action
+      that cannot exist without script, and the address it copies is on the page
+      as selectable text, which is the ordinary way to do the same thing.
+
+      <dialog> rather than a div: showModal() gives the focus trap, Escape, the
+      inert background and the return of focus to whatever opened it, all as
+      browser behaviour rather than as a hand-rolled trap that will be subtly
+      wrong. role and aria-modal are stated anyway, as asked; they match what
+      the element already means.
+    */}
+    <dialog class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+      <input
+        class="palette-input"
+        type="text"
+        role="combobox"
+        aria-expanded="true"
+        aria-controls="palette-list"
+        aria-autocomplete="list"
+        placeholder="Type to filter…"
+        autocomplete="off"
+        autofocus
+      />
+      <ul class="palette-list" id="palette-list" role="listbox" aria-label="Actions">
+        <li><a id="pal-work" role="option" aria-selected="false" href="/#work">Jump to Work</a></li>
+        <li><a id="pal-building" role="option" aria-selected="false" href="/#building">Jump to Building</a></li>
+        <li><a id="pal-about" role="option" aria-selected="false" href="/#about">Jump to About</a></li>
+        <li><a id="pal-contact" role="option" aria-selected="false" href="/#contact">Jump to Contact</a></li>
+        <li><a id="pal-email" role="option" aria-selected="false" href={`mailto:${EMAIL}`}>Email me <span class="palette-hint">{EMAIL}</span></a></li>
+        <li><a id="pal-github" role="option" aria-selected="false" href={GITHUB}>Open GitHub <span class="palette-hint">github.com/velawind</span></a></li>
+        <li><button id="pal-theme" role="option" aria-selected="false" type="button" data-action="theme">Toggle theme</button></li>
+        <li><button id="pal-copy" role="option" aria-selected="false" type="button" data-action="copy">Copy email to clipboard</button></li>
+      </ul>
+      <p class="palette-empty" hidden></p>
+      <p class="palette-status" role="status"></p>
+    </dialog>
+
     <slot />
     {/*
       The disclosure only. The name is the h1 on the home page and the eyebrow
       on every other route, so a line here was a third copy of it.
     */}
+    {/*
+      The disclosure, and the two links the command palette offers from every
+      route. They are here because of what the palette promised: a shortcut may
+      never be the only way to reach something. Without these, a reader with
+      JavaScript off standing on a case study had no address and no repository
+      link on the page at all, while a reader with it had both. The name is not
+      repeated here; it is the h1 on the home page and the eyebrow elsewhere.
+    */}
     <footer class="site-footer">
       <p>{aiDisclosure}</p>
+      <p class="site-footer-links">
+        <a href={`mailto:${EMAIL}`}>{EMAIL}</a> · <a href={GITHUB} rel="me">github.com/velawind</a>
+      </p>
     </footer>
 
     <script>
@@ -184,6 +252,121 @@ const aiDisclosure =
 
         button.addEventListener('click', () => {
           apply(ORDER[(ORDER.indexOf(read()) + 1) % ORDER.length]);
+        });
+      }
+    </script>
+
+    <script>
+      /*
+       * The command palette. Everything it can do is reachable without it, so
+       * this file is allowed to be small: the rows are real links and buttons,
+       * activating one is row.click(), and <dialog>.showModal() supplies the
+       * focus trap, Escape and the return of focus that would otherwise be most
+       * of the code here.
+       */
+      import { EMAIL } from '../lib/site';
+
+      const palette = document.querySelector('.palette');
+      const opener = document.querySelector('.palette-open');
+
+      if (palette instanceof HTMLDialogElement && opener instanceof HTMLElement) {
+        const input = palette.querySelector('.palette-input') as HTMLInputElement;
+        const empty = palette.querySelector('.palette-empty') as HTMLElement;
+        const status = palette.querySelector('.palette-status') as HTMLElement;
+        const rows = [...palette.querySelectorAll<HTMLElement>('[role="option"]')];
+        let active = 0;
+
+        // The key legend is the one thing that cannot be decided at build time.
+        const mac = /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
+        const key = opener.querySelector('.palette-key') as HTMLElement;
+        key.textContent = mac ? key.dataset.mac! : key.dataset.other!;
+        opener.setAttribute('aria-label', `Open the command palette (${key.textContent})`);
+        opener.hidden = false;
+
+        const shown = () => rows.filter((row) => !row.hidden);
+
+        const select = (index: number) => {
+          const list = shown();
+          rows.forEach((row) => row.setAttribute('aria-selected', 'false'));
+          if (!list.length) return input.removeAttribute('aria-activedescendant');
+          active = (index + list.length) % list.length;
+          const row = list[active];
+          row.setAttribute('aria-selected', 'true');
+          // Focus stays in the input; this is what tells a screen reader which
+          // row is current, and it is why the rows are options and not links
+          // as far as assistive technology is concerned.
+          input.setAttribute('aria-activedescendant', row.id);
+          row.scrollIntoView({ block: 'nearest' });
+        };
+
+        const filter = () => {
+          const query = input.value.trim().toLowerCase();
+          rows.forEach((row) => {
+            row.hidden = query !== '' && !row.textContent!.toLowerCase().includes(query);
+          });
+          // Never a blank box: an empty result says so and suggests a way out.
+          empty.hidden = shown().length > 0;
+          empty.textContent = `Nothing matches “${input.value.trim()}”. Try work, email, theme or GitHub.`;
+          select(0);
+        };
+
+        const open = () => {
+          input.value = '';
+          status.textContent = '';
+          filter();
+          palette.showModal();
+        };
+
+        opener.addEventListener('click', open);
+
+        addEventListener('keydown', (event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            palette.open ? palette.close() : open();
+          }
+        });
+
+        input.addEventListener('input', filter);
+
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            select(active + (event.key === 'ArrowDown' ? 1 : -1));
+          } else if (event.key === 'Enter') {
+            event.preventDefault();
+            shown()[active]?.click();
+          }
+        });
+
+        // showModal() returns focus to whatever was focused before it opened,
+        // which after the keyboard shortcut is nothing at all. Naming the
+        // trigger makes the return the same however it was opened.
+        palette.addEventListener('close', () => opener.focus());
+
+        palette.addEventListener('click', async (event) => {
+          const target = event.target as HTMLElement;
+          // A click on the dialog itself landed on the backdrop: the rows are
+          // all inside it, so nothing was hit.
+          if (target === palette) return palette.close();
+
+          // A link row navigates on its own. Close it so a same-page jump does
+          // not leave the palette sitting over the section it just moved to.
+          if (target.closest('a[role="option"]')) return palette.close();
+
+          const row = target.closest<HTMLElement>('[data-action]');
+          if (!row) return;
+          if (row.dataset.action === 'theme') {
+            document.querySelector<HTMLElement>('.theme-toggle')?.click();
+            status.textContent = 'Theme changed.';
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(EMAIL);
+            status.textContent = `Copied ${EMAIL} to the clipboard.`;
+          } catch {
+            // Denied, or no clipboard. Say so rather than appearing to work.
+            status.textContent = `Could not copy. The address is ${EMAIL}.`;
+          }
         });
       }
     </script>
