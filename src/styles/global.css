@@ -123,6 +123,30 @@
   /* ~64 characters at the base size: the column is the layout. */
   --measure: 34rem;
 
+  /*
+   * The wide track, for the one thing on this site that is not running text.
+   * Exactly twice the prose measure, which is the reason for the number: two
+   * cards and a gap across it come to 33.25rem each, so even at full width a
+   * card is narrower than a paragraph is, and widening the page never widens a
+   * line of text. Nothing that reads as prose may use this.
+   */
+  --measure-wide: 68rem;
+
+  /*
+   * The narrowest a project card may be before the grid drops a column. Below
+   * this the blurb breaks into a three-word stack and the tags wrap to their
+   * own line each, which is the point at which one wider card beats two.
+   */
+  --card-min: 20.5rem;
+
+  /*
+   * Corner radii come off the spacing scale rather than being a second set of
+   * numbers nobody can derive: the smallest gap in the system rounds a chip,
+   * the next one up rounds a panel.
+   */
+  --radius-chip: var(--space-3xs);
+  --radius-panel: var(--space-2xs);
+
   --font-system: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
@@ -312,6 +336,7 @@ strong {
  */
 .page > * + *,
 .home > * + *,
+.wrap > * + *,
 .readme > * + * {
   margin-block-start: var(--flow-space, var(--space-s));
 }
@@ -331,6 +356,31 @@ h3 {
   max-width: var(--measure);
   margin: 0 auto;
   padding: var(--space-xl) 0 var(--space-l);
+}
+
+/*
+ * The wide track. Only the project grid uses it, and .page is unchanged, so no
+ * case study and nothing inside .readme can reach this width: a wide column of
+ * running text is the regression this token is one edit away from causing, and
+ * keeping the two classes separate is what stops that edit being accidental.
+ *
+ * `width: 100%` for the same reason .page carries it, see the note above.
+ */
+.wrap {
+  width: 100%;
+  max-width: var(--measure-wide);
+  margin-inline: auto;
+  padding: var(--space-xl) 0 var(--space-l);
+}
+
+/*
+ * Prose in the wide track is still prose. A paragraph put straight into a
+ * .wrap keeps the reading measure instead of inheriting the track, so the
+ * intro line this page will eventually want cannot silently become a 68rem
+ * line. Text inside a card is already narrow and is not affected.
+ */
+.wrap > p {
+  max-width: var(--measure);
 }
 
 /*
@@ -575,29 +625,149 @@ hr {
 /* --------------------------------------------------------------- projects */
 
 /*
- * The case-study index. Each item is a name and a line under it, so the marker
- * is dropped: a bullet in front of a two-line entry reads as an outline rather
- * than a list of things to click. The name is one step up the scale, which is
- * the only hierarchy the list needs. Hover is the link colour change every link
- * on the site already has, and nothing else.
+ * The case-study index. It is still one <ul> of one <li> per project, because
+ * it is still a list; the grid changes how many fit on a line, not what it is.
  */
-.project-list {
-  --flow-space: var(--space-l);
+.project-grid {
+  --flow-space: var(--space-xl);
+  display: grid;
+  /*
+   * The min() is what keeps this off the 320px failure. A bare
+   * minmax(--card-min, 1fr) sets a hard track floor of 328px, wider than the
+   * viewport itself on a phone, and a grid does not drop to one column to
+   * escape that: it overflows and takes the page sideways with it. min(x, 100%)
+   * lets the track fall back to the container when the container is the
+   * smaller of the two, which is exactly the single-column behaviour wanted.
+   */
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min), 100%), 1fr));
+  gap: var(--space-m);
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
-.project-list li + li {
-  margin-top: var(--space-m);
+/*
+ * The whole card is clickable but only the name is the link. An anchor wrapped
+ * around the card would announce itself as "Lodestar, Interactive astrophysics
+ * ..., React, TypeScript, Canvas 2D, KaTeX, Live, link", which is a sentence
+ * nobody wants read to them; the ::after on that one anchor stretches its hit
+ * area over the card instead. Nothing here needs script: a click on the card is
+ * an ordinary link activation, and the keyboard still tabs to the name.
+ */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  /* Clips the media panel's square corners to the card's rounded ones. */
+  overflow: hidden;
+  /* The global li rule spaces list items; the grid gap does that here. */
+  margin: 0;
 }
 
-.project-list a {
-  font-size: var(--text-l);
-  letter-spacing: -0.01em;
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    transition: border-color 120ms ease;
+  }
 }
 
-.project-list p {
-  margin-top: var(--space-3xs);
+/*
+ * Hover and keyboard focus get the same treatment, and it is a colour change
+ * only: nothing grows, lifts or shadows. :has() is an enhancement here rather
+ * than a requirement, because the name keeps the site-wide focus ring either
+ * way, so a browser without it loses a tint and not the ability to see focus.
+ */
+.card:hover,
+.card:has(a:focus-visible) {
+  border-color: var(--accent);
+}
+
+.card-name a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * A reserved 16/9 panel in the project's own colour. There are no project
+ * screenshots on this site yet, and a stock image or a generated pattern would
+ * be decoration standing in for information, so the panel carries the one piece
+ * of information it honestly can: which project this is. It holds the exact
+ * space a real screenshot will occupy, so adding one later moves nothing.
+ *
+ * Mixed in oklab, not oklch: oklch interpolates hue the polar way and a mix of
+ * the cyan with this warm surface travels through green, which is the bug the
+ * --rule token above already carries a note about.
+ */
+.card-media {
+  aspect-ratio: 16 / 9;
+  background: color-mix(in oklab, var(--card-accent) 18%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-m);
+  /* Fills the card so the badge below can be pinned to the bottom edge. */
+  flex: 1;
+}
+
+.card-name {
+  /* The card is not a section of the page, so its heading starts no new flow. */
+  --flow-space: 0;
+}
+
+.card-blurb {
+  color: var(--text-muted);
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.card-tags li {
+  margin: 0;
+  padding: var(--space-3xs) var(--space-2xs);
+  background: var(--code-bg);
+  border-radius: var(--radius-chip);
+  font-family: var(--font-mono);
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+
+/*
+ * The badge says whether the thing itself can be opened, which is a different
+ * question from what the project is, so it takes its colour from the state and
+ * never from the project: --live for anything reachable now, --vio for anything
+ * still ahead. `margin-top: auto` holds it on the bottom edge so the badges of
+ * two cards in a row line up even when their blurbs differ in length.
+ */
+.card-status {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: var(--space-3xs) var(--space-2xs);
+  border: 1px solid color-mix(in oklab, var(--status-color) 45%, var(--bg));
+  border-radius: var(--radius-chip);
+  /*
+   * The chip is the page colour showing through the card, not a wash of the
+   * status colour. A 12% wash was tried first and measured 4.29:1 in the light
+   * scheme, under the floor: tinting the background with the same colour as the
+   * text moves them toward each other, and --live has the least room of the
+   * five to give. Against --bg the same text measures 5.41:1, and the colour is
+   * carried by the border and the words instead.
+   */
+  background: var(--bg);
+  color: var(--status-color);
+  font-size: var(--text-s);
 }
 
 /* ------------------------------------------------------------------- home */
