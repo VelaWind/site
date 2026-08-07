@@ -8,6 +8,7 @@
 import '../styles/global.css';
 import { EMAIL, GITHUB } from '../lib/site';
 import Sky from '../components/Sky.astro';
+import Eggs from '../components/Eggs.astro';
 
 interface Props {
   title: string;
@@ -182,6 +183,7 @@ const aiDisclosure =
     </dialog>
 
     <slot />
+    <Eggs />
     {/*
       The disclosure only. The name is the h1 on the home page and the eyebrow
       on every other route, so a line here was a third copy of it.

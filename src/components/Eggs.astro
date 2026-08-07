@@ -1,0 +1,181 @@
+---
+/**
+ * Six things that do nothing until somebody goes looking for them.
+ *
+ * The rules every one of them keeps:
+ *
+ *   - Inert. Nothing here runs, paints or logs anything a reader who is not
+ *     looking for it will notice.
+ *   - No layout. Transforms and colours only. Nothing reflows, nothing moves
+ *     anything else, and the one that rewrites text pins its own width first.
+ *   - No change to keyboard navigation. Not one tab stop is added, removed or
+ *     reordered by any of these.
+ *   - Nothing fires by accident on a touch screen. The two pointer eggs are
+ *     behind `pointer: fine`, and the other two need a key sequence that a
+ *     device with no keyboard cannot produce.
+ *
+ * All six are listed in the console banner, so none of them has to be guessed.
+ */
+---
+
+<script>
+  const root = document.documentElement;
+  const fine = matchMedia('(pointer: fine)').matches;
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* 1 ------------------------------------------------------- type "vela" --
+   * Toggles the constellation. The typing test is skipped whenever focus is in
+   * a field, which covers the command palette's own input as well as any form
+   * a future page grows: otherwise typing the site's own name into the palette
+   * would set the sky off underneath it.
+   */
+  let typed = '';
+  addEventListener('keydown', (event) => {
+    const el = document.activeElement;
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ||
+        (el instanceof HTMLElement && el.isContentEditable)) return;
+    if (event.key.length !== 1) return;
+    typed = (typed + event.key.toLowerCase()).slice(-4);
+    if (typed === 'vela') {
+      typed = '';
+      document.dispatchEvent(new CustomEvent('vela:toggle'));
+    }
+  });
+
+  /* 2 ------------------------------------------------------- konami code --
+   * Gravity. transform only, so nothing reflows and nothing around it moves.
+   * It reverses itself on a timer rather than on an interaction, so there is no
+   * state to get stuck in: if the tab is closed mid-fall nothing was persisted.
+   *
+   * Skipped under reduced motion. The whole egg is the motion, so honouring the
+   * preference means not running it rather than running it instantly.
+   */
+  const KONAMI = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft',
+    'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+  let keys: string[] = [];
+  let falling = false;
+
+  addEventListener('keydown', (event) => {
+    keys = [...keys, event.key.toLowerCase()].slice(-KONAMI.length);
+    if (keys.join() !== KONAMI.join() || falling || still.matches) return;
+    keys = [];
+    falling = true;
+    const victims = [...document.querySelectorAll<HTMLElement>('.card, .stats, .panel')];
+    victims.forEach((el, i) => {
+      el.style.setProperty('--fall-delay', `${i * 55}ms`);
+      el.classList.add('gravity', 'gravity-fall');
+    });
+    setTimeout(() => victims.forEach((el) => el.classList.remove('gravity-fall')), 2600);
+    setTimeout(() => victims.forEach((el) => {
+      el.classList.remove('gravity');
+      el.style.removeProperty('--fall-delay');
+      falling = false;
+    }), 4400);
+  });
+
+  /* 3 ------------------------------------------- five clicks on the orb --
+   * Rerolls --hue-sky. The point it proves is that the palette is one token
+   * deep: --accent, --accent-strong and --rule are all oklch with that hue
+   * substituted, so moving the number moves every link, focus ring, hairline
+   * and the progress bar together, in both schemes, with nothing else touched.
+   *
+   * Behind `pointer: fine`, so on a touch screen the handler does not exist and
+   * a tap on the orb is an ordinary click on the link around it. The orb is a
+   * decorative span, aria-hidden and not focusable, so nothing here changes the
+   * tab order.
+   */
+  const HUES: Record<string, number> = { star: 78, live: 150, sea: 195, sky: 250, vio: 305 };
+  const orb = document.querySelector<HTMLElement>('.orb');
+  if (fine && orb) {
+    let clicks: number[] = [];
+    orb.addEventListener('click', (event) => {
+      // Only the dot, not the wordmark beside it, which stays a working link.
+      event.preventDefault();
+      const now = event.timeStamp;
+      clicks = [...clicks, now].filter((t) => now - t < 1400);
+      if (clicks.length < 5) return;
+      clicks = [];
+      const current = Number(getComputedStyle(root).getPropertyValue('--hue-sky'));
+      const others = Object.values(HUES).filter((h) => h !== current);
+      const next = others[Math.floor(Math.random() * others.length)];
+      root.style.setProperty('--hue-sky', String(next));
+    });
+  }
+
+  /* 4 --------------------------------------------- scrambling the wordmark --
+   * Greek, because Vela's stars are named with it. Skipped entirely under
+   * reduced motion and on a touch screen, where there is no hover to begin
+   * with. The element's width is pinned for the duration, so a glyph that
+   * happens to be wider than the letter it stands in for cannot nudge anything.
+   */
+  const GREEK = 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ';
+  const mark = document.querySelector<HTMLElement>('.wordmark-text');
+  if (fine && mark && !still.matches) {
+    const word = mark.textContent ?? '';
+    let running = false;
+    mark.parentElement?.addEventListener('pointerenter', () => {
+      if (running) return;
+      running = true;
+      mark.style.width = `${mark.getBoundingClientRect().width}px`;
+      mark.style.display = 'inline-block';
+      const started = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - started) / 300);
+        const settled = Math.round(progress * word.length);
+        mark.textContent = word.slice(0, settled) +
+          [...word.slice(settled)].map(() => GREEK[Math.floor(Math.random() * GREEK.length)]).join('');
+        if (progress < 1) requestAnimationFrame(tick);
+        else {
+          mark.textContent = word;
+          mark.style.removeProperty('width');
+          mark.style.removeProperty('display');
+          running = false;
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /* 5 ------------------------------------------------------ console banner --
+   * The only one that announces itself, and only to somebody who has already
+   * opened the tools. It is also where the other five are documented, so none
+   * of them has to be guessed at.
+   */
+  const amber = (() => {
+    // The console parses CSS colours but not reliably oklch, so the token is
+    // rasterised to hex first rather than hoping.
+    const c = document.createElement('canvas').getContext('2d');
+    if (!c) return '#8a600a';
+    c.fillStyle = getComputedStyle(root).getPropertyValue('--star').trim();
+    return c.fillStyle as string;
+  })();
+
+  console.log(
+    `%cVelaWind%c
+Everything here is public: the site, both case studies, and the repositories
+they are about. The case studies are the point — each one says what a decision
+cost, not just what it did.
+
+Say hello: hello@velawind.dev · github.com/velawind
+
+Six things are hidden in this page, and none of them changes anything you can
+break:
+  1. type "vela" anywhere        light the constellation, type it again to dim
+  2. ↑↑↓↓←→←→BA                  gravity, for 2.6 seconds
+  3. click the wordmark orb ×5   reroll the accent hue, to show it is one token
+  4. hover the wordmark          Greek, briefly
+  5. this banner
+  6. ?grid                       a 4rem rhythm grid, for checking alignment
+Items 2 and 4 stand down under prefers-reduced-motion; 3 and 4 want a mouse.`,
+    `color:${amber};font-size:15px;font-weight:700;letter-spacing:0.04em`,
+    'color:inherit;font-size:inherit;font-weight:400',
+  );
+
+  /* 6 --------------------------------------------------------------- ?grid --
+   * A query flag rather than a control, so it is impossible to reach by
+   * accident and trivial to reach on purpose. The overlay is a fixed
+   * pseudo-element on body: no element is added, nothing is measured, and
+   * pointer-events: none keeps it out of the way of everything beneath it.
+   */
+  if (new URLSearchParams(location.search).has('grid')) root.dataset.grid = '';
+</script>

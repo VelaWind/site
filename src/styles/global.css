@@ -1059,6 +1059,52 @@ hr {
   color: var(--accent-strong);
 }
 
+/* ------------------------------------------------------------------ eggs */
+
+/*
+ * Six things that do nothing until somebody goes looking for them. The rules
+ * they all keep: none of them moves anything in the layout, none of them adds
+ * or removes a tab stop, and none can fire without a deliberate key sequence,
+ * a deliberate URL, or five clicks on a ten-pixel dot.
+ */
+
+/*
+ * Gravity. transform only, so nothing reflows and nothing around it moves; the
+ * elements keep their place in the document and their place in the tab order
+ * the whole time. Inside the motion guard, so a reader who has asked for
+ * stillness gets nothing at all rather than a silent 2.6 seconds of absence.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .gravity {
+    transition: transform 1.1s cubic-bezier(0.55, 0, 0.9, 0.35);
+    transition-delay: var(--fall-delay, 0ms);
+  }
+
+  .gravity-fall {
+    transform: translateY(120vh);
+  }
+}
+
+/*
+ * The rhythm grid, for checking alignment against the spacing scale. Fixed and
+ * pointer-events: none, so it is an overlay and not a layer anything has to
+ * work around. Only ?grid in the query string puts the attribute on the root.
+ */
+:root[data-grid] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--accent) 22%, transparent) 0,
+    color-mix(in oklab, var(--accent) 22%, transparent) 1px,
+    transparent 1px,
+    transparent 4rem
+  );
+}
+
 /* ------------------------------------------------------------------- sky */
 
 /*
