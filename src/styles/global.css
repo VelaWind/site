@@ -156,6 +156,14 @@
   --spotlight: 18rem;
 
   /*
+   * The theme toggle, and any control like it. A new step rather than a bare
+   * number in the rule: 34px is a deliberate size, big enough to be a
+   * comfortable target and small enough not to become page furniture, and it
+   * sits between --space-m and --space-l where the scale has no step.
+   */
+  --control-size: 34px;
+
+  /*
    * Corner radii come off the spacing scale rather than being a second set of
    * numbers nobody can derive: the smallest gap in the system rounds a chip,
    * the next one up rounds a panel.
@@ -169,20 +177,66 @@
     "Liberation Mono", monospace;
 }
 
+/*
+ * The dark scheme, reachable two ways.
+ *
+ * A reader can now choose, so the device preference is no longer the only
+ * switch. There are three states and they map to the attribute like this:
+ *
+ *   data-theme="dark"    chosen dark, whatever the device says
+ *   data-theme="light"   chosen light, whatever the device says
+ *   attribute absent     no choice made: follow the device
+ *
+ * The absent state is what a reader with JavaScript off always has, which is
+ * why it is the one that falls through to the media query rather than to a
+ * hardcoded default.
+ *
+ * The declarations below appear twice, and they are the only duplication in
+ * this file. CSS cannot express "this selector, or this media query" as one
+ * rule, and the alternatives are worse: light-dark() would say each value once
+ * but makes every colour on the site invalid at once on a browser that lacks
+ * it, which is a far worse failure than the one it prevents. So: two copies,
+ * kept adjacent so a change to one is visibly a change to only one, and this
+ * note asking for both.
+ */
+:root[data-theme='dark'] {
+  /*
+   * The same five hues lifted, not five new colours. A 48% blue on a 17%
+   * ground is legible and reads as a hole in the page, so every colour moves
+   * to the top of the range instead: 80-84% lightness, where a dark scheme
+   * puts its foreground.
+   *
+   * Measured ratios against --bg (#0d1116), rendered pixels not estimates:
+   * accent 10.21:1, star 11.44:1, sea 11.29:1, live 11.37:1, vio 9.73:1.
+   * The light scheme runs tighter, 5.38:1 to 6.27:1 on #fbfaf7, because a
+   * colour dark enough to read on near-white has less room above the floor
+   * than a pale one has below it.
+   */
+  color-scheme: dark;
+
+  --accent: oklch(80% 0.095 var(--hue-sky));
+  --accent-strong: oklch(88% 0.06 var(--hue-sky));
+
+  --star: oklch(84% 0.135 var(--hue-star));
+  --sea: oklch(82% 0.1 var(--hue-sea));
+  --live: oklch(82% 0.125 var(--hue-live));
+  --vio: oklch(80% 0.125 var(--hue-vio));
+
+  --bg: oklch(17.5% 0.012 250);
+  --surface: oklch(22% 0.014 250);
+  --text: oklch(92% 0.008 250);
+  --text-muted: oklch(73% 0.014 250);
+  --border: oklch(34% 0.017 250);
+  --code-bg: oklch(23% 0.014 250);
+
+  --rule: oklch(38% 0.035 var(--hue-sky));
+}
+
+/* The second copy. Same values; keep it in step with the block above. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    /*
-     * The same five hues lifted, not five new colours. A 48% blue on a 17%
-     * ground is legible and reads as a hole in the page, so every colour moves
-     * to the top of the range instead: 80-84% lightness, where a dark scheme
-     * puts its foreground.
-     *
-     * Measured ratios against --bg (#0d1116), rendered pixels not estimates:
-     * accent 10.21:1, star 11.44:1, sea 11.29:1, live 11.37:1, vio 9.73:1.
-     * The light scheme runs tighter, 5.38:1 to 6.27:1 on #fbfaf7, because a
-     * colour dark enough to read on near-white has less room above the floor
-     * than a pale one has below it.
-     */
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
     --accent: oklch(80% 0.095 var(--hue-sky));
     --accent-strong: oklch(88% 0.06 var(--hue-sky));
 
@@ -200,6 +254,15 @@
 
     --rule: oklch(38% 0.035 var(--hue-sky));
   }
+}
+
+/*
+ * A chosen light theme has to say so, or the native parts of the page (form
+ * controls, scrollbars) keep following the device while the page itself does
+ * not, and the two disagree down the side of the window.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 /* ------------------------------------------------------------------ reset */
@@ -266,6 +329,31 @@ body {
  * fetched span had a code block in it until now, so nothing had been wide
  * enough to press against it.
  */
+
+/*
+ * Crossing between themes, and only that.
+ *
+ * The rule is universal because a themed surface is not a short list: the page,
+ * the cards, the chips, the code blocks, every hairline. Fading the background
+ * while every border and panel jumps is worse than not fading at all, so all
+ * three themed properties move together.
+ *
+ * It does not override anything that already has a transition. Links, cards and
+ * buttons declare their own faster ones and those win, which is what should
+ * happen: 400ms is right for a whole page changing scheme and far too slow for
+ * a border answering a cursor.
+ *
+ * Nothing transitions on first paint, because a transition needs a previous
+ * value to move from, so this costs nothing on load.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  *,
+  *::before,
+  *::after {
+    transition: background-color 400ms ease, border-color 400ms ease,
+      color 400ms ease;
+  }
+}
 
 /* ------------------------------------------------------------- typography */
 
@@ -491,6 +579,65 @@ a:focus-visible,
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* ---------------------------------------------------------- theme toggle */
+
+/*
+ * Hidden unless the inline script in the head has run and set data-js on the
+ * root. The button does nothing without script, and a control that does nothing
+ * is worse than no control, so with JavaScript off it is never painted at all
+ * rather than painted and dead. Because the flag is set before first paint,
+ * there is no moment where it appears and then vanishes.
+ */
+.theme-toggle {
+  display: none;
+}
+
+:root[data-js] .theme-toggle {
+  position: fixed;
+  top: var(--space-s);
+  right: var(--space-s);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-size);
+  height: var(--control-size);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  /* Above the page, below the skip link, which has to win when focused. */
+  z-index: 2;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-toggle svg {
+  width: var(--space-m);
+  height: var(--space-m);
+  display: block;
+}
+
+/*
+ * One glyph per state, all three in the markup, the attribute deciding which is
+ * painted. Doing it this way rather than swapping an icon in script means the
+ * button is already correct in the first frame, on the same pass that set the
+ * theme.
+ */
+.theme-toggle [data-glyph] {
+  display: none;
+}
+
+:root:not([data-theme]) .theme-toggle [data-glyph='system'],
+:root[data-theme='light'] .theme-toggle [data-glyph='light'],
+:root[data-theme='dark'] .theme-toggle [data-glyph='dark'] {
+  display: block;
 }
 
 /* --------------------------------------------------------------- skip link */

@@ -36,6 +36,43 @@ const aiDisclosure =
     <link rel="canonical" href={canonical.href} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="color-scheme" content="light dark" />
+    {/*
+      The one render-blocking script on this site, and it is correct here for a
+      reason that does not generalise.
+
+      Everything else the site does can wait: it is deferred, or it is CSS, or
+      it does not exist. This cannot wait. The stored theme has to be on the
+      root element before the first paint, because the alternative is painting
+      the device's theme and then correcting it, which is the white flash every
+      reader of a dark site knows. A deferred script runs after that paint. The
+      cost of blocking here is a few hundred bytes parsed before layout, and it
+      buys the absence of the one visual defect a theme toggle can introduce.
+
+      It is inline rather than a file for the same reason: a request would put
+      the network between the reader and the first frame.
+
+      `is:inline` keeps Astro from hoisting and bundling it into a module,
+      which would make it deferred and defeat the whole point.
+
+      The try/catch is not decoration. Reading localStorage throws outright in
+      some privacy modes, and an exception here would stop the script before it
+      set data-js, leaving the toggle permanently hidden.
+    */}
+    <script is:inline>
+      try {
+        var stored = localStorage.getItem('velawind-theme');
+        if (stored === 'light' || stored === 'dark') {
+          document.documentElement.dataset.theme = stored;
+        }
+      } catch (e) {
+        /* No storage: fall through to the device preference, which is the
+           same state as a reader who has never chosen. */
+      }
+      /* Tells the stylesheet a script is running, so the toggle can be shown.
+         Set unconditionally, and outside the try, so a storage failure never
+         hides a control that still works. */
+      document.documentElement.dataset.js = '';
+    </script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -49,6 +86,41 @@ const aiDisclosure =
       stylesheet; nothing here needs script.
     */}
     <div class="reading-progress" aria-hidden="true"></div>
+
+    {/*
+      Three states, not two: light, dark, and the absence of a choice. The
+      third is not a formality — it is the only one that keeps following the
+      device after the reader changes it, and it is the state every reader
+      starts in, so removing it would mean the first click permanently opts
+      someone out of their own system setting.
+
+      The label says which state the button is in, because "Toggle theme" tells
+      a reader who cannot see the glyph nothing about what they are currently
+      looking at. It is rendered here for the no-choice state and corrected by
+      the script below when a stored choice says otherwise.
+    */}
+    <button
+      class="theme-toggle"
+      type="button"
+      aria-label="Theme: following your device. Change theme."
+    >
+      {/* Decorative: the label carries the meaning. */}
+      <svg data-glyph="system" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+        stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="12" cy="12" r="8"></circle>
+        <path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor" stroke="none"></path>
+      </svg>
+      <svg data-glyph="light" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+        stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.5"></circle>
+        <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"></path>
+      </svg>
+      <svg data-glyph="dark" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+        stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"></path>
+      </svg>
+    </button>
+
     <slot />
     {/*
       The disclosure only. The name is the h1 on the home page and the eyebrow
@@ -57,5 +129,63 @@ const aiDisclosure =
     <footer class="site-footer">
       <p>{aiDisclosure}</p>
     </footer>
+
+    <script>
+      /*
+       * The toggle's behaviour. Deferred, unlike the script in the head: none
+       * of this has to happen before the first paint, because the head script
+       * has already put the page in the right theme and the stylesheet has
+       * already chosen the right glyph from the attribute.
+       *
+       * Which glyph shows is CSS's job, not this file's. All this does is move
+       * between three states, write the choice down, and keep the label
+       * honest.
+       */
+      type ThemeState = 'system' | 'light' | 'dark';
+
+      const KEY = 'velawind-theme';
+      const ORDER: ThemeState[] = ['system', 'light', 'dark'];
+      const LABEL: Record<ThemeState, string> = {
+        system: 'Theme: following your device. Change theme.',
+        light: 'Theme: light. Change theme.',
+        dark: 'Theme: dark. Change theme.',
+      };
+
+      const root = document.documentElement;
+      const button = document.querySelector('.theme-toggle');
+
+      if (button instanceof HTMLElement) {
+        const read = (): ThemeState => {
+          const set = root.dataset.theme;
+          return set === 'light' || set === 'dark' ? set : 'system';
+        };
+
+        const apply = (state: ThemeState) => {
+          if (state === 'system') {
+            delete root.dataset.theme;
+          } else {
+            root.dataset.theme = state;
+          }
+          button.setAttribute('aria-label', LABEL[state]);
+          try {
+            // "system" is stored as an absence, so a reader who returns to it
+            // is in the same state as one who never chose.
+            if (state === 'system') localStorage.removeItem(KEY);
+            else localStorage.setItem(KEY, state);
+          } catch (e) {
+            /* Storage refused. The choice still applies for this page view,
+               which is better than refusing to switch at all. */
+          }
+        };
+
+        // The markup is rendered with the no-choice label; correct it if the
+        // head script found a stored choice.
+        button.setAttribute('aria-label', LABEL[read()]);
+
+        button.addEventListener('click', () => {
+          apply(ORDER[(ORDER.indexOf(read()) + 1) % ORDER.length]);
+        });
+      }
+    </script>
   </body>
 </html>
