@@ -7,6 +7,7 @@
  */
 import '../styles/global.css';
 import { EMAIL, GITHUB } from '../lib/site';
+import Sky from '../components/Sky.astro';
 
 interface Props {
   title: string;
@@ -77,6 +78,7 @@ const aiDisclosure =
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
+    <Sky />
     {/*
       Decorative only: it reports the scroll position the scrollbar already
       shows, so it is hidden from assistive technology. It lives here rather
@@ -173,6 +175,7 @@ const aiDisclosure =
         <li><a id="pal-github" role="option" aria-selected="false" href={GITHUB}>Open GitHub <span class="palette-hint">github.com/velawind</span></a></li>
         <li><button id="pal-theme" role="option" aria-selected="false" type="button" data-action="theme">Toggle theme</button></li>
         <li><button id="pal-copy" role="option" aria-selected="false" type="button" data-action="copy">Copy email to clipboard</button></li>
+        <li><button id="pal-vela" role="option" aria-selected="false" type="button" data-action="vela">Light the Vela constellation</button></li>
       </ul>
       <p class="palette-empty" hidden></p>
       <p class="palette-status" role="status"></p>
@@ -195,6 +198,7 @@ const aiDisclosure =
       <p>{aiDisclosure}</p>
       <p class="site-footer-links">
         <a href={`mailto:${EMAIL}`}>{EMAIL}</a> · <a href={GITHUB} rel="me">github.com/velawind</a>
+        <button class="vela-light" type="button">Light the Vela constellation</button>
       </p>
     </footer>
 
@@ -254,6 +258,11 @@ const aiDisclosure =
           apply(ORDER[(ORDER.indexOf(read()) + 1) % ORDER.length]);
         });
       }
+
+      // The plain equivalent of the palette's constellation row.
+      document.querySelector('.vela-light')?.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('vela:light'));
+      });
     </script>
 
     <script>
@@ -283,6 +292,18 @@ const aiDisclosure =
         opener.setAttribute('aria-label', `Open the command palette (${key.textContent})`);
         opener.hidden = false;
 
+        /*
+         * Match the action's name, not the whole row. The hints are an address
+         * and a URL, and on a site called velawind both contain "vela": typing
+         * it matched three rows and put Email first, so Enter opened a mail
+         * client instead of lighting the constellation. Computed once here
+         * rather than on every keystroke.
+         */
+        rows.forEach((row) => {
+          const hint = row.querySelector('.palette-hint')?.textContent ?? '';
+          row.dataset.label = row.textContent!.replace(hint, '').trim().toLowerCase();
+        });
+
         const shown = () => rows.filter((row) => !row.hidden);
 
         const select = (index: number) => {
@@ -302,7 +323,7 @@ const aiDisclosure =
         const filter = () => {
           const query = input.value.trim().toLowerCase();
           rows.forEach((row) => {
-            row.hidden = query !== '' && !row.textContent!.toLowerCase().includes(query);
+            row.hidden = query !== '' && !row.dataset.label!.includes(query);
           });
           // Never a blank box: an empty result says so and suggests a way out.
           empty.hidden = shown().length > 0;
@@ -358,6 +379,11 @@ const aiDisclosure =
           if (row.dataset.action === 'theme') {
             document.querySelector<HTMLElement>('.theme-toggle')?.click();
             status.textContent = 'Theme changed.';
+            return;
+          }
+          if (row.dataset.action === 'vela') {
+            document.dispatchEvent(new CustomEvent('vela:light'));
+            status.textContent = 'Vela is lit, upper right.';
             return;
           }
           try {
