@@ -13,11 +13,42 @@ import Eggs from '../components/Eggs.astro';
 interface Props {
   title: string;
   description: string;
+  /**
+   * What the page is, for the unfurl. A case study is an article; the front
+   * page and the index are not.
+   */
+  type?: 'website' | 'article';
 }
 
-const { title, description } = Astro.props;
+const { title, description, type = 'website' } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://velawind.dev');
+const site = Astro.site ?? new URL('https://velawind.dev');
+
+/*
+ * The trailing slash is stripped deliberately. Astro builds directories, so
+ * Astro.url.pathname is "/projects/lodestar/", and vercel.json sets
+ * trailingSlash: false, so that address answers 308 and redirects. A canonical
+ * that redirects is untidy; an og:url that redirects is worse, because a
+ * scraper follows it and can cache the page under the wrong address.
+ */
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const canonical = new URL(path, site);
+
+/*
+ * The card drops the site name from the title, because og:site_name already
+ * carries it and "Lodestar · VelaWind — VelaWind" is what happens otherwise.
+ */
+const cardTitle = title.replace(/\s+·\s+VelaWind$/, '');
+
+/*
+ * Absolute, and it has to be: a relative og:image is ignored by every scraper
+ * there is. That is the failure mode where the markup looks right and no card
+ * ever appears.
+ */
+const ogImage = new URL('/og.png', site);
+const ogImageAlt =
+  'The VelaWind wordmark in light type on a dark field, above the line: ' +
+  'Computer science student. I build systems whose ground truth comes from something real.';
 
 /*
  * The AI-assistance disclosure, mirroring the wording on Lodestar's own About
@@ -39,6 +70,35 @@ const aiDisclosure =
     <link rel="canonical" href={canonical.href} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="color-scheme" content="light dark" />
+
+    {/*
+      The unfurl. This site's job is to be pasted into an application, a message
+      or a mail body, and without these it arrives as a bare URL next to other
+      people's cards.
+
+      Every URL here is absolute. og:image especially: a relative one is
+      discarded by every scraper, and the symptom is a card with no picture and
+      nothing in the markup that looks wrong.
+
+      The values are per route because Base is given the page's own title and
+      description, so a shared case study unfurls as itself rather than as the
+      front page.
+    */}
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content="VelaWind" />
+    <meta property="og:title" content={cardTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={cardTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.href} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
     {/*
       The one render-blocking script on this site, and it is correct here for a
       reason that does not generalise.

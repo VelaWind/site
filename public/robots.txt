@@ -1,0 +1,6 @@
+# Everything here is public and meant to be read, by people and by crawlers
+# alike. Nothing is disallowed because nothing needs to be.
+User-agent: *
+Allow: /
+
+Sitemap: https://velawind.dev/sitemap.xml

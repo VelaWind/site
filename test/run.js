@@ -15,6 +15,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findChrome } from '../scripts/chrome.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const PREVIEW_PORT = 4380;
@@ -38,31 +39,6 @@ let cleanedUp = false;
 
 function log(message) {
   process.stdout.write(`[test] ${message}\n`);
-}
-
-/**
- * Chrome is a browser, not a dependency: it is not installed by npm and cannot
- * be. Look where it usually is, let an environment variable win, and fail with
- * a sentence somebody can act on rather than a stack trace.
- */
-function findChrome() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-  ].filter(Boolean);
-  const found = candidates.find((path) => existsSync(path));
-  if (!found) {
-    throw new Error(
-      'no Chrome found. These tests drive a real browser, so one has to be installed.\n' +
-        'Set CHROME_PATH to its executable, or install Chrome or Chromium.',
-    );
-  }
-  return found;
 }
 
 /**

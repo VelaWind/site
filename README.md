@@ -20,6 +20,97 @@ a page behind it is a dead link; the home page lists all of them, because a
 project with no write-up yet is still work and its repository is a real
 destination.
 
+## Project screenshots
+
+A card shows a real screenshot when one exists and the accent-tinted panel when
+one does not, so the projects can be captured one at a time. Adding a picture is
+two steps: put the file in `src/assets/projects/`, then name it in
+`src/lib/projects.ts` with its alt text. A file named there and missing from
+disk stops the build rather than serving a card with a hole in it.
+
+**Capture to this spec.**
+
+| | |
+|---|---|
+| Dimensions | **2560 × 1440**, from a **1280 × 720** viewport captured at 2× |
+| Aspect ratio | **Exactly 16:9.** Anything else is cropped from the centre |
+| Format | **PNG**, lossless, straight from the capture |
+| Minimum | 1400 px wide. Below that the largest variant is upscaled |
+| Filename | The project in kebab-case: `lodestar.png`, `vela-sea.png` |
+
+The viewport size is the part that is easy to get wrong. The panel is 671 CSS px
+across at its widest — measured, at a 720px viewport, the last width before the
+grid takes a second column — and about 345px on the home page's three-column
+line. A 2560px-wide *screenshot of a 2560px-wide window* shrinks to a quarter
+size in that panel and its text becomes unreadable specks. Capturing a 1280px
+viewport at 2× gives the same file size with the layout of an ordinary laptop,
+which is legible at card size and is also what the software actually looks like
+to most people using it. 16:9 is not a preference: the panel is
+`aspect-ratio: 16 / 9` and `object-fit: cover` will crop whatever does not match.
+
+**What belongs in frame:**
+
+- The software doing the thing it is for. A simulation mid-run, a parameter
+  moved off its default, a page of real content. Not an empty state, not a
+  landing page, not a login screen, not settings.
+- The app's dark theme if it has one. The card sits on a dark surface, and a
+  white screenshot in a dark card is a rectangle of glare.
+- Nothing but the app. No browser chrome, address bar, bookmarks, tab strip,
+  extension icons, OS taskbar, mouse cursor, or scrollbar. Capture the viewport,
+  not the window.
+- Nothing personal. No real name, no email, no signed-in account, no avatar, no
+  file path with a username in it. Same rule as everywhere else here.
+- The interesting part away from the edges, because the panel crops from the
+  centre when a capture is not exactly 16:9.
+
+**Then write the alt text**, in the same entry. It describes what is happening on
+the screen, not what the project is called — the name is the heading directly
+below it, and a screen reader that says "Lodestar, Lodestar, interactive
+astrophysics" has been told nothing by the middle one:
+
+```ts
+image: {
+  file: 'lodestar.png',
+  alt: 'A dark reading page headed "Space, explained in layers you choose to '
+    + 'open", with a depth control set to Curious and cards for escape '
+    + 'velocity, Kepler orbits and black holes below it.',
+},
+```
+
+**What it costs.** The build emits AVIF and WebP at 350, 700 and 1400 px wide
+and a browser fetches exactly one of them. Measured with a real 1600 × 900
+screenshot of the Lodestar deploy, on `/projects`:
+
+| | Before | After |
+|---|---|---|
+| HTML | 16,829 B | 17,547 B |
+| CSS | 16,915 B | 17,009 B |
+| Image | — | 11,716 B at 1×, 31,916 B at 2× |
+| **Total** | **33,744 B** | **46,272 B at 1×, 66,472 B at 2×** |
+
+One screenshot roughly doubles the page on a retina screen, and it is still
+under 70 KB — smaller than a single web font, which this site also does not
+have. The image is what the page weighs now; the rest is rounding.
+
+## Unfurls
+
+Every route carries its own Open Graph and Twitter tags, written once in
+`src/layouts/Base.astro` from the `title` and `description` each page already
+passes, so a shared case study unfurls as that case study rather than as the
+front page. Case studies pass `type="article"`; everything else is a website.
+
+`public/og.png` is the 1200×630 card, and it is drawn by
+`node scripts/make-og-image.js` — headless Chrome rendering `src/styles/global.css`,
+so the card is the site's own tokens rather than a hand-matched copy of them in
+an image editor. Rerun it after changing a colour or a type step. The output is
+committed, because a card changes about once a year and making every deploy
+depend on an installed browser would be a poor trade for that.
+
+`sitemap.xml` is a route (`src/pages/sitemap.xml.ts`) rather than an
+integration; it takes its case-study URLs from `src/lib/projects.ts`, so a new
+one appears without anybody remembering. `@astrojs/sitemap` was considered and
+turned down: five packages, transitively, to print four URLs.
+
 ## JavaScript
 
 There is one script, and it is on the two routes that show project cards. It
