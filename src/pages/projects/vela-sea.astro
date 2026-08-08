@@ -15,11 +15,13 @@
  */
 import Base from '../../layouts/Base.astro';
 import { fetchCaseStudySection } from '../../lib/case-study-readme';
+import { projectByHref } from '../../lib/projects';
 
 const { html, sourceUrl } = await fetchCaseStudySection({
   owner: 'VelaWind',
   repo: 'vela-sea',
-  branch: 'main',
+  // From the project entry, so the branch is a fact recorded once.
+  branch: projectByHref('/projects/vela-sea')?.branch,
   expectedHeading: '# Vela Sea',
 });
 

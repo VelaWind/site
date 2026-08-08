@@ -40,11 +40,14 @@ export interface CaseStudySource {
   /** Repository name, e.g. "lodestar". */
   repo: string;
   /**
-   * Branch to read. Pinned by the caller rather than defaulted, because a URL
-   * that works by redirect today is a silent staleness bug the day the
-   * repository grows the branch it was redirecting from.
+   * Branch to read, defaulting to main. Optional rather than required because
+   * a repository that names its default branch something else is a fact about
+   * the world, not a mistake to correct: VelaWind/veritas is on master. Still
+   * pinned rather than left to a redirect, because a URL that resolves by
+   * redirect today is a silent staleness bug the day the repository grows the
+   * branch it was redirecting from.
    */
-  branch: string;
+  branch?: string;
   /**
    * The README's first line. A repository that has gone private, or a path that
    * no longer exists, can still answer with a body; this checks the response is
@@ -54,7 +57,7 @@ export interface CaseStudySource {
 }
 
 /** Raw file root for a source, with the trailing slash. */
-function rawBase({ owner, repo, branch }: CaseStudySource): string {
+function rawBase({ owner, repo, branch = 'main' }: CaseStudySource): string {
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`;
 }
 

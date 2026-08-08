@@ -44,6 +44,8 @@ export interface Project {
    * something else. Giving these a colour means adding a hue in global.css.
    */
   accent?: 'star' | 'sea';
+  /** The repository's default branch. Not every repo calls it main. */
+  branch?: string;
   /**
    * Whether a reader can open the thing itself right now, as opposed to
    * reading about it. Optional, because "no badge" is the honest state for
@@ -77,6 +79,7 @@ export const projects: Project[] = [
     blurb: 'A catalogue of knowledge claims where Postgres enforces the rules, not the application.',
     href: 'https://github.com/VelaWind/veritas',
     caseStudy: false,
+    branch: 'master',
     tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
   },
   {
@@ -111,3 +114,7 @@ export const STATUS_TOKEN: Record<NonNullable<Project['status']>, string> = {
   playable: '--live',
   wip: '--vio',
 };
+
+/** The entry for a route, so a page can read its own project's data. */
+export const projectByHref = (href: string): Project | undefined =>
+  projects.find((project) => project.href === href);
