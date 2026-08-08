@@ -73,32 +73,43 @@
     }), 4400);
   });
 
-  /* 3 ------------------------------------------- five clicks on the orb --
+  /* 3 ------------------------------------ five clicks on the availability dot --
    * Rerolls --hue-sky. The point it proves is that the palette is one token
    * deep: --accent, --accent-strong and --rule are all oklch with that hue
-   * substituted, so moving the number moves every link, focus ring, hairline
+   * substituted, so moving one number moves every link, focus ring, hairline
    * and the progress bar together, in both schemes, with nothing else touched.
    *
-   * Behind `pointer: fine`, so on a touch screen the handler does not exist and
-   * a tap on the orb is an ordinary click on the link around it. The orb is a
-   * decorative span, aria-hidden and not focusable, so nothing here changes the
-   * tab order.
+   * It used to count clicks on the wordmark orb, and that was wrong. The orb is
+   * inside the anchor, so counting clicks meant calling preventDefault on it,
+   * which cost the logo its navigation on every device with a mouse: a
+   * permanent, universal affordance traded for the least discoverable of the
+   * six. The dot in the availability pill is decorative in exactly the same way
+   * and sits in a <p>, so clicking it has no default behaviour to suppress and
+   * nothing anywhere is taken away.
+   *
+   * The obvious alternative was a dblclick on the orb, on the theory that
+   * letting the single click through costs nothing. It does not survive
+   * contact: dispatching a real double click on a link navigates on the FIRST
+   * click and tears the document down, so the dblclick handler never runs in a
+   * live page. Measured, not assumed. It would have needed the same
+   * preventDefault and bought nothing.
+   *
+   * Behind `pointer: fine`, so on a touch screen the handler does not exist.
+   * The dot is an aria-hidden span and is not focusable, so nothing here adds,
+   * removes or reorders a tab stop.
    */
   const HUES: Record<string, number> = { star: 78, live: 150, sea: 195, sky: 250, vio: 305 };
-  const orb = document.querySelector<HTMLElement>('.orb');
-  if (fine && orb) {
+  const dot = document.querySelector<HTMLElement>('.pill-dot');
+  if (fine && dot) {
     let clicks: number[] = [];
-    orb.addEventListener('click', (event) => {
-      // Only the dot, not the wordmark beside it, which stays a working link.
-      event.preventDefault();
+    dot.addEventListener('click', (event) => {
       const now = event.timeStamp;
       clicks = [...clicks, now].filter((t) => now - t < 1400);
       if (clicks.length < 5) return;
       clicks = [];
       const current = Number(getComputedStyle(root).getPropertyValue('--hue-sky'));
       const others = Object.values(HUES).filter((h) => h !== current);
-      const next = others[Math.floor(Math.random() * others.length)];
-      root.style.setProperty('--hue-sky', String(next));
+      root.style.setProperty('--hue-sky', String(others[Math.floor(Math.random() * others.length)]));
     });
   }
 
@@ -162,7 +173,7 @@ Six things are hidden in this page, and none of them changes anything you can
 break:
   1. type "vela" anywhere        light the constellation, type it again to dim
   2. ↑↑↓↓←→←→BA                  gravity, for 2.6 seconds
-  3. click the wordmark orb ×5   reroll the accent hue, to show it is one token
+  3. click the availability dot ×5  reroll the accent hue, one token deep
   4. hover the wordmark          Greek, briefly
   5. this banner
   6. ?grid                       a 4rem rhythm grid, for checking alignment
