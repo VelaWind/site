@@ -47,6 +47,14 @@
    * It reverses itself on a timer rather than on an interaction, so there is no
    * state to get stuck in: if the tab is closed mid-fall nothing was persisted.
    *
+   * The blocks go `inert` for the duration. Without it they were translated
+   * 120vh away and still focusable, so tabbing into the window put focus on
+   * something with no visible indicator anywhere on screen: a 2.4.7 failure.
+   * A tab stop that is missing for 4.4 seconds of an animation somebody typed
+   * ten keys to start is not a failure of anything; focus landing where nobody
+   * can see it is. `inert` is added with the fall and removed with it, so the
+   * tab order afterwards is the one from before, not a rebuilt approximation.
+   *
    * Skipped under reduced motion. The whole egg is the motion, so honouring the
    * preference means not running it rather than running it instantly.
    */
@@ -64,11 +72,15 @@
     victims.forEach((el, i) => {
       el.style.setProperty('--fall-delay', `${i * 55}ms`);
       el.classList.add('gravity', 'gravity-fall');
+      el.setAttribute('inert', '');
     });
     setTimeout(() => victims.forEach((el) => el.classList.remove('gravity-fall')), 2600);
     setTimeout(() => victims.forEach((el) => {
       el.classList.remove('gravity');
       el.style.removeProperty('--fall-delay');
+      // Removed at the end of the return rather than the start of it: between
+      // those two moments the blocks are still mostly off screen.
+      el.removeAttribute('inert');
       falling = false;
     }), 4400);
   });
