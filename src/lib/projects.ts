@@ -44,6 +44,35 @@ export interface Project {
    * something else. Giving these a colour means adding a hue in global.css.
    */
   accent?: 'star' | 'sea';
+  /**
+   * A real screenshot of the software, if one has been taken.
+   *
+   * Optional, and the absence is the ordinary state rather than a gap waiting
+   * to be filled: a card without one falls back to the tinted panel, so the
+   * projects can gain pictures one at a time and the ones not yet captured go
+   * on looking finished rather than looking broken.
+   *
+   * The file lives in src/assets/projects/ and is named here rather than
+   * imported, so adding a picture stays an edit to this array and nothing else.
+   * Capture it to the spec in the README; a file named here that is not on disk
+   * fails the build rather than serving a card with a hole in it.
+   *
+   * The alt text is required alongside the file, which is why this is one field
+   * and not two. Whether an image needs a description is a decision somebody
+   * has to make, and making the picture impossible to add without also writing
+   * the sentence is cheaper than remembering to come back for it.
+   */
+  image?: {
+    /** Filename inside src/assets/projects/, extension included. */
+    file: string;
+    /**
+     * What the software is doing in this frame. Not the project's name: that
+     * is the heading immediately below, and a screen reader announcing
+     * "Lodestar, Lodestar, interactive astrophysics..." has been told nothing
+     * by the middle one. Describe the screen.
+     */
+    alt: string;
+  };
   /** The repository's default branch. Not every repo calls it main. */
   branch?: string;
   /**

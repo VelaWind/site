@@ -23,7 +23,18 @@ import { caseStudies } from '../../lib/projects';
     <h1>Projects</h1>
 
     <ul class="project-grid">
-      {caseStudies.map((project) => <ProjectCard project={project} />)}
+      {
+        /*
+         * The first card is eager, the rest lazy. Measured at every viewport
+         * width from 320px to 1920px, this one's media is inside the opening
+         * viewport at all of them, and lazy-loading a picture the reader is
+         * already looking at only delays it. The home page passes nothing,
+         * because its cards were below the fold at every width tested.
+         */
+        caseStudies.map((project, index) => (
+          <ProjectCard project={project} eager={index === 0} />
+        ))
+      }
     </ul>
   </main>
 </Base>

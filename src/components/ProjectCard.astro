@@ -6,6 +6,7 @@
  * the Vela Sea case study spends a section on: two copies of the same thing
  * agree until the day one of them is edited, and nothing reports the drift.
  */
+import { Picture } from 'astro:assets';
 import type { Project } from '../lib/projects';
 import { STATUS_LABEL, STATUS_TOKEN } from '../lib/projects';
 
@@ -13,10 +14,72 @@ interface Props {
   project: Project;
   /** Heading level, so the card fits the outline of whichever page holds it. */
   level?: 2 | 3;
+  /**
+   * Whether this card's picture is wanted immediately. False everywhere except
+   * the first card on /projects, which measurement put inside the opening
+   * viewport at every width from 320px to 1920px; lazy-loading an image the
+   * reader is already looking at only delays it.
+   */
+  eager?: boolean;
 }
 
-const { project, level = 2 } = Astro.props;
+const { project, level = 2, eager = false } = Astro.props;
 const Heading = `h${level}` as 'h2' | 'h3';
+
+/*
+ * The screenshots are found by glob rather than imported one per project,
+ * because the point of the optional field is that a card can gain a picture
+ * without any other file being edited. Vite resolves this at build time, so
+ * the images still go through the asset pipeline and still get hashed
+ * filenames; nothing here is a runtime lookup.
+ *
+ * eager, because there are at most four of them and a lazy glob would hand back
+ * a promise this component would then have to await for a value it needs during
+ * render.
+ */
+const shots = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/projects/*.{png,jpg,jpeg,webp,avif}',
+  { eager: true },
+);
+
+const shot = project.image ? shots[`/src/assets/projects/${project.image.file}`]?.default : undefined;
+
+/*
+ * Named but missing stops the build, on the same reasoning as the case-study
+ * README fetch: the failure a silent fallback would hide is a card that was
+ * meant to show the software and is quietly showing a coloured rectangle
+ * instead, which looks identical to a card that was never given a picture.
+ */
+if (project.image && !shot) {
+  throw new Error(
+    `${project.name} names the screenshot "${project.image.file}", but ` +
+      `src/assets/projects/${project.image.file} does not exist. Capture it to the ` +
+      'spec in the README, or remove the image field from src/lib/projects.ts.',
+  );
+}
+
+/*
+ * The accent tint is set on whichever element ends up being the panel. On a
+ * card with a picture it stays as the background behind it, so the space is
+ * the card's own colour while the image is still arriving rather than a bare
+ * hole; the picture covers it once it lands.
+ */
+const mediaStyle = project.accent ? `--card-accent: var(--${project.accent})` : undefined;
+
+/*
+ * Measured rather than guessed. The panel is at its widest, 671px, on a 720px
+ * viewport: that is the last width before the grid takes a second column, and a
+ * single column there is nearly the whole page. Above that it never exceeds
+ * 530px, and on the home page's three-column line it is about 345px. 94vw
+ * describes the first case and 34rem the second, so the browser is never told
+ * to fetch an image larger than it is going to paint.
+ *
+ * The widths above follow from it: 700 serves the 671px panel on a 1x screen,
+ * 1400 serves it on a 2x one, and 350 is the narrow-column case. There is no
+ * 2100 because a 3x phone is never showing the 671px layout — that width only
+ * happens on a tablet-sized viewport.
+ */
+const SIZES = '(min-width: 46rem) 34rem, 94vw';
 
 // An off-site card says so in its own accessible name, so a reader using a
 // screen reader learns where the link goes before following it rather than
@@ -25,11 +88,23 @@ const away = !project.caseStudy;
 ---
 
 <li class="card" style={project.accent ? `--c: var(--${project.accent})` : undefined}>
-  <div
-    class="card-media"
-    style={project.accent ? `--card-accent: var(--${project.accent})` : undefined}
-    aria-hidden="true"
-  />
+  {
+    shot ? (
+      <Picture
+        class="card-media"
+        pictureAttributes={{ class: 'card-shot', style: mediaStyle }}
+        src={shot}
+        alt={project.image!.alt}
+        widths={[350, 700, 1400]}
+        sizes={SIZES}
+        formats={['avif']}
+        fallbackFormat="webp"
+        loading={eager ? 'eager' : 'lazy'}
+      />
+    ) : (
+      <div class="card-media" style={mediaStyle} aria-hidden="true" />
+    )
+  }
   <div class="card-body">
     <Heading class="card-name">
       <a

@@ -1320,6 +1320,34 @@ hr {
   border-bottom: 1px solid var(--border);
 }
 
+/*
+ * A card that has a real screenshot. The picture takes the panel's place rather
+ * than sitting inside it, and takes its box exactly, so a row holding one card
+ * that has been captured and two that have not still lines up.
+ *
+ * The tint above is not removed. It is what occupies the space while the file
+ * is still arriving, which is the difference between a card that is loading and
+ * a card with a hole in it, and it costs nothing: an opaque screenshot covers
+ * it completely the moment it paints.
+ */
+.card-shot {
+  /* <picture> is inline, and an inline box hands the image a line-box descender
+     the plain div never had: a few pixels of gap above the border-bottom. */
+  display: block;
+}
+
+img.card-media {
+  display: block;
+  width: 100%;
+  height: auto;
+  /*
+   * The 16/9 above governs, and cover crops the file to it. A capture that comes
+   * back at 16/10 is then a slightly cropped screenshot rather than a taller
+   * card that pushes every other card on its row out of line with it.
+   */
+  object-fit: cover;
+}
+
 .card-body {
   display: flex;
   flex-direction: column;
