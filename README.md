@@ -36,6 +36,47 @@ route needs script to be read, navigated or used.
 
 `/projects/lodestar` and `/projects/vela-sea` ship zero script tags.
 
+## Tests
+
+`npm test` builds the site, serves the built output, drives a real headless
+Chrome over the DevTools Protocol, and tears both down again. It needs nothing
+installed that is not already here: Node has a global WebSocket and a global
+fetch, and CDP is JSON over one socket, so the whole harness is `node --test`
+and about two hundred lines in `test/`. Chrome itself has to exist on the
+machine; set `CHROME_PATH` if it is somewhere unusual.
+
+One file per concern, named for what it protects:
+
+| File | What it guards |
+|---|---|
+| `print.test.js` | Nothing that carries content prints invisible. |
+| `still-under-reduced-motion.test.js` | Under `reduce`, nothing declares motion and successive frames are identical, canvas included. |
+| `contrast-aa.test.js` | Every text and background pair, both schemes, all four routes, against 4.5:1 (3:1 for large text). |
+| `keyboard-order.test.js` | Every tab stop is on screen and shows focus; the palette traps focus and gives it back. |
+| `works-without-javascript.test.js` | Every link works, no section is invisible, no layout collapses, and no dead control is painted. |
+| `palette.test.js` | Filtering, selection, activation, and that every action has a plain equivalent elsewhere. |
+| `sky.test.js` | Canvas geometry, the devicePixelRatio cap, and the constellation. |
+
+Print runs first, on its own, because it caught the one defect that was
+invisible in every browser check: the sections revealed by a scroll timeline
+printed at opacity 0, since paper cannot be scrolled. Every assertion states the
+threshold it defends and prints the measured number, so a failure reads
+`expected 4.5:1, measured 4.31:1 for .card-blurb (#a1a9b0 on #161b21)` rather
+than `expected true, got false`.
+
+### What is not guarded
+
+There is no copy snapshot, and that is deliberate. Lodestar has one because it
+carries a lot of prose that changes underneath it and a silent rewrite there is
+a real risk. Four pages do not need every word pinned: the snapshot would fail
+on every edit, the failure would always be expected, and a test that is always
+expected to fail teaches everyone to ignore it.
+
+Also not covered: visual regression, real screen readers, browsers other than
+Chromium, and the READMEs that two case studies fetch at build time. That last
+one is guarded differently — the fetch has no committed fallback, so a missing
+file or a moved marker fails the build rather than serving a stale page.
+
 ## The case study body is not stored here
 
 `/projects/lodestar` fetches
