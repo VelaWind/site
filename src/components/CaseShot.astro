@@ -6,9 +6,13 @@
  * screenshot shrunk to that is specks — so this column, measured at a flat
  * 544 CSS px from a 600px viewport up, is where the truth-by-photograph goes.
  *
- * Without a screenshot the slot renders the project's tinted panel, exactly
- * the shape the picture will occupy, so the layout can be judged and the page
- * does not reflow on the day the capture lands.
+ * Without a screenshot the BUILT page renders nothing here at all. An empty
+ * tinted rectangle under the lede reads as a broken image — the exact
+ * coloured-rectangle-pretending-to-be-software problem the scenes/screenshots
+ * split exists to avoid — and this is a static site that rebuilds anyway, so
+ * "the page must not reflow when the capture lands" buys nothing a rebuild
+ * does not. The placeholder survives only in `astro dev`, where judging the
+ * layout before a capture exists is the whole point of it.
  */
 import { Picture } from 'astro:assets';
 import { projectByHref } from '../lib/projects';
@@ -74,6 +78,7 @@ const SIZES = '(min-width: 37.5rem) 34rem, calc(100vw - 2rem)';
       loading="eager"
     />
   ) : (
-    <div class="case-shot" style={tint} aria-hidden="true" />
+    // Dev only: the built site must never show an empty box. See the header.
+    import.meta.env.DEV && <div class="case-shot" style={tint} aria-hidden="true" />
   )
 }

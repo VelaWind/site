@@ -1431,9 +1431,10 @@ hr {
 /*
  * The screenshot slot on a case-study page. Cards always run their scenes;
  * this is where the real picture goes, in the one column wide enough to read
- * one. Empty, it holds the exact 16/9 box the capture will occupy in the
- * project's tint, so the layout can be judged before the picture exists and
- * nothing reflows on the day it lands.
+ * one. The empty tinted box exists only under `astro dev`, for judging the
+ * layout before a capture exists — the built site renders nothing at all
+ * without a screenshot, because an empty 16/9 rectangle under a lede reads as
+ * a broken image.
  */
 .case-shot {
   aspect-ratio: 16 / 9;
