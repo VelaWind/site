@@ -22,6 +22,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome } from './chrome.js';
+import { OG_LEDE } from '../src/lib/og-card.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const WIDTH = 1200;
@@ -30,10 +31,11 @@ const PORT = 9444;
 
 const tokens = readFileSync(join(ROOT, 'src/styles/global.css'), 'utf8');
 
-// The positioning line, kept identical to the one on the home page.
-const LEDE =
-  'Four projects, each answerable to something outside itself: SI constants, ' +
-  'the maritime collision rules, database constraints, the filesystem.';
+// The positioning line. Imported, not copied: src/lib/og-card.js is the one
+// home of this text, shared with the alt attributes in Base.astro, and it is
+// what test/og-card.test.js compares the home lede and the committed PNG
+// against. See the note in that file before changing it.
+const LEDE = OG_LEDE;
 
 /*
  * data-theme="dark" rather than a media query, so the card is dark whatever the
@@ -84,6 +86,49 @@ const html = `<!doctype html>
     <p class="foot">velawind.dev</p>
   </body>
 </html>`;
+
+/* ------------------------------------------------------------- provenance --
+ *
+ * The line the card was drawn from is written into the PNG itself, as a
+ * standard tEXt chunk with the registered "Description" keyword, so the
+ * committed image carries the text it shows and test/og-card.test.js can fail
+ * when that text is no longer the text in src/lib/og-card.js. A sidecar file
+ * was considered and rejected: two committed files that must move together is
+ * the same silent-divergence bug this exists to end.
+ *
+ * PNG chunks are length + type + data + CRC-32 over type-and-data, and the
+ * new chunk goes immediately before IEND, which the spec requires to be last.
+ * Hand-rolled because it is ~20 lines and a dependency would be the first one
+ * in this repo.
+ */
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+const crc32 = (buf) => {
+  let c = 0xffffffff;
+  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+
+function withDescription(png, text) {
+  // tEXt data is keyword, a NUL, then Latin-1 text; the card line is ASCII.
+  const data = Buffer.concat([Buffer.from('Description\0', 'latin1'), Buffer.from(text, 'latin1')]);
+  const chunk = Buffer.alloc(12 + data.length);
+  chunk.writeUInt32BE(data.length, 0);
+  chunk.write('tEXt', 4, 'latin1');
+  data.copy(chunk, 8);
+  chunk.writeUInt32BE(crc32(chunk.subarray(4, 8 + data.length)), 8 + data.length);
+  // IEND is always the final 12 bytes: zero length, type, CRC.
+  const iend = png.length - 12;
+  return Buffer.concat([png.subarray(0, iend), chunk, png.subarray(iend)]);
+}
 
 const profile = mkdtempSync(join(tmpdir(), 'velawind-og-'));
 const pagePath = join(profile, 'card.html');
@@ -149,7 +194,7 @@ try {
   });
 
   const out = join(ROOT, 'public/og.png');
-  const bytes = Buffer.from(shot.data, 'base64');
+  const bytes = withDescription(Buffer.from(shot.data, 'base64'), LEDE);
   writeFileSync(out, bytes);
   ws.close();
 

@@ -7,6 +7,7 @@
  */
 import '../styles/global.css';
 import { EMAIL, GITHUB } from '../lib/site';
+import { OG_IMAGE_ALT } from '../lib/og-card.js';
 import Sky from '../components/Sky.astro';
 import Eggs from '../components/Eggs.astro';
 
@@ -55,10 +56,12 @@ const cardTitle = title.replace(/\s+·\s+VelaWind$/, '');
  * ever appears.
  */
 const ogImage = new URL('/og.png', site);
-const ogImageAlt =
-  'The VelaWind wordmark in light type on a dark field, above the line: ' +
-  'Four projects, each answerable to something outside itself: SI constants, ' +
-  'the maritime collision rules, database constraints, the filesystem.';
+/*
+ * From src/lib/og-card.js, the one home of the card's line, so the alt cannot
+ * quote a sentence the picture no longer shows. test/og-card.test.js holds
+ * all three — page lede, committed PNG, these attributes — to the same text.
+ */
+const ogImageAlt = OG_IMAGE_ALT;
 
 /*
  * The AI-assistance disclosure, mirroring the wording on Lodestar's own About
