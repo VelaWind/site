@@ -232,7 +232,6 @@ export function mountSky(canvas) {
 
     // Constellation lines: invisible at rest, raised only near the pointer —
     // or all of them, hull included, when the egg has lit the ship.
-    const sky = skyBox(w, h);
     for (const c of CONSTELLATIONS) {
       ctx.strokeStyle = colours[c.token];
       ctx.lineWidth = 1;

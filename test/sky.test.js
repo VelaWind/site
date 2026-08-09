@@ -62,48 +62,67 @@ test('the canvas is decorative and unreachable', async (t) => {
   exactly(state.contentAbove, '1', 'z-index of the page content, which has to sit above the canvas');
 });
 
-test('the star field scales with the viewport and stops at the cap', async (t) => {
+test('the star field scales with the viewport area and stops at the cap', async (t) => {
   const page = await openPage();
   t.after(() => page.close());
 
+  /*
+   * The law is clamp(area / 7000, 60, 260). At a height of 800 that puts
+   * 320px and 500px both on the 60-star floor, 900px and 1400px on the
+   * rising slope, and 2400px and 3200px both on the 260-star cap, so the
+   * three regimes are each asserted with a pair.
+   */
   const counts = [];
-  for (const width of [320, 900, 1400, 2400]) {
+  for (const width of [320, 500, 900, 1400, 2400, 3200]) {
     await page.emulate({ width, height: 800 });
-    await page.goto('/');
-    counts.push({ width, ink: await page.evaluate(INK), expected: Math.min(150, Math.round(width / 9)) });
+    // Settled well past the arrival sequence, so every width is measured
+    // against the same resting sky rather than a different moment of the wave.
+    await page.goto('/', 4600);
+    counts.push({ width, ink: await page.evaluate(INK) });
   }
+  const ink = Object.fromEntries(counts.map((c) => [c.width, c.ink]));
 
-  atLeast(counts[1].ink, counts[0].ink, `painted pixels at 900px against 320px (measured ${counts[1].ink} and ${counts[0].ink})`);
-  atLeast(counts[2].ink, counts[1].ink, `painted pixels at 1400px against 900px (measured ${counts[2].ink} and ${counts[1].ink})`);
-  // Both are capped at 150 stars, so the wider one must not paint meaningfully more.
+  // The floor: both clamped to 60 stars, so similar ink despite 1.5x the width.
+  atMost(ink[500], Math.round(ink[320] * 1.4), `painted pixels at 500px against 320px, both on the 60-star floor (measured ${ink[500]} and ${ink[320]})`);
+  // The slope: more area, more stars.
+  atLeast(ink[900], ink[320], `painted pixels at 900px against 320px (measured ${ink[900]} and ${ink[320]})`);
+  atLeast(ink[1400], ink[900], `painted pixels at 1400px against 900px (measured ${ink[1400]} and ${ink[900]})`);
+  // The cap: both clamped to 260 stars, so the wider one must not paint meaningfully more.
   atMost(
-    counts[3].ink,
-    Math.round(counts[2].ink * 1.25),
-    `painted pixels at 2400px, where the star count is capped at 150 exactly as it is at 1400px (measured ${counts[3].ink} against ${counts[2].ink})`,
+    ink[3200],
+    Math.round(ink[2400] * 1.3),
+    `painted pixels at 3200px, where the count is capped at 260 exactly as at 2400px (measured ${ink[3200]} against ${ink[2400]})`,
   );
 });
 
-test('the constellation lights, holds, and dims again', async (t) => {
+test('the ship lights, holds, and dims again', async (t) => {
   const page = await openPage();
   t.after(() => page.close());
 
   await page.emulate({ motion: 'no-preference', width: 1280 });
-  await page.goto('/');
+  await page.goto('/', 4200); // past the arrival sequence, into the resting sky
 
+  /*
+   * The catalogue is now always in the sky, so the egg no longer conjures
+   * stars from nothing: vela:light raises the constellation figures, the
+   * Argo hull and the three labels from alpha zero to full. The measured
+   * difference is therefore lines and labels over an already-populated
+   * field, not a doubling of everything painted.
+   */
   const dark = await page.evaluate(INK);
   await page.evaluate(`document.dispatchEvent(new CustomEvent('vela:light'))`);
-  await page.sleep(1200);
+  await page.sleep(400);
   const lit = await page.evaluate(INK);
-  atLeast(lit, dark * 2, `painted pixels once the constellation is lit, against ${dark} unlit`);
+  atLeast(lit, dark + 800, `painted pixels once the ship is lit, against ${dark} unlit`);
 
   await page.sleep(800);
   const held = await page.evaluate(INK);
-  atLeast(held, lit * 0.75, `painted pixels after the fade completes, against ${lit} at the end of it`);
+  atLeast(held, dark + 800, `painted pixels while the ship stays lit, against ${dark} unlit`);
 
   await page.evaluate(`document.dispatchEvent(new CustomEvent('vela:toggle'))`);
-  await page.sleep(1400);
+  await page.sleep(400);
   const dimmed = await page.evaluate(INK);
-  atMost(dimmed, dark * 1.6, `painted pixels once dimmed again, against ${dark} before it was ever lit`);
+  atMost(dimmed, Math.round(dark * 1.25), `painted pixels once dimmed again, against ${dark} before it was ever lit`);
 });
 
 test('under reduced motion it arrives in one frame and never loops', async (t) => {
@@ -114,10 +133,11 @@ test('under reduced motion it arrives in one frame and never loops', async (t) =
   await page.goto('/');
 
   const before = await page.evaluate(INK);
+  atLeast(before, 200, 'painted pixels in the static reduced-motion frame, which must already hold the whole sky');
   await page.evaluate(`document.dispatchEvent(new CustomEvent('vela:light'))`);
   await page.sleep(150);
   const immediately = await page.evaluate(INK);
-  atLeast(immediately, before * 2, `painted pixels one frame after lighting under reduced motion, against ${before} before`);
+  atLeast(immediately, before + 500, `painted pixels one frame after lighting under reduced motion, against ${before} before`);
 
   await page.sleep(800);
   exactly(await page.evaluate(INK), immediately, 'painted pixels changing after the first frame under reduced motion, which would mean a loop is running');
