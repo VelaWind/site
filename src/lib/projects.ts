@@ -105,6 +105,14 @@ export const projects: Project[] = [
     tags: ['React', 'TypeScript', 'Canvas 2D', 'KaTeX'],
     accent: 'star',
     status: 'live',
+    screenshot: {
+      file: 'lodestar.png',
+      alt: 'A dark simulation page at mid-transit: a planet’s black disc '
+        + 'sits centred on a pale star while the marker on the light curve '
+        + 'below rests at the bottom of a 1.01% dip, beside sliders for the '
+        + 'star’s mass and size, the planet’s size and its orbit, '
+        + 'and readouts for transit depth, duration and orbital period.',
+    },
     // Canopus: the navigation star for centuries. The lodestar.
     anchor: 'canopus',
   },
@@ -116,6 +124,15 @@ export const projects: Project[] = [
     tags: ['Python', 'Pygame', 'pytest', 'pygbag'],
     accent: 'sea',
     status: 'playable',
+    screenshot: {
+      file: 'vela-sea.png',
+      alt: 'A night sea chart on which a cargo ship’s status panel reads '
+        + 'RESCUING and its track bends sharply toward a mayday call, where '
+        + 'MV Thornwick lies aground; a banner reports the nearest vessel '
+        + 'diverting to assist, a timestamped event log records the mayday '
+        + 'and the response, and a roster lists the rest of the fleet '
+        + 'underway among named ports and islands.',
+    },
     // The brightest star in the sails.
     anchor: 'gamma-velorum',
   },
