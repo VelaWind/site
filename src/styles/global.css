@@ -1202,14 +1202,14 @@ hr {
  */
 @media screen and (prefers-reduced-motion: no-preference) {
   :root[data-arrive]:not([data-arrive-go])
-    :is(.site-header, .hero > *, main > :not(.hero):not(.reveal), .site-footer) {
+    :is(.controls, .site-header, .hero > *, main > :not(.hero):not(.reveal), .site-footer) {
     opacity: 0;
     transform: translateY(var(--space-s));
     filter: blur(var(--space-2xs));
   }
 
   :root[data-arrive][data-arrive-go]
-    :is(.site-header, .hero > *, main > :not(.hero):not(.reveal), .site-footer) {
+    :is(.controls, .site-header, .hero > *, main > :not(.hero):not(.reveal), .site-footer) {
     opacity: 1;
     transform: none;
     filter: none;

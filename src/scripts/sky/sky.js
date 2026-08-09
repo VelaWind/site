@@ -30,7 +30,7 @@ import {
  * have their own scroll-driven entry and two systems fighting over one
  * element's opacity helps nobody.
  */
-const REVEAL_SELECTOR = '.site-header, .hero > *, main > :not(.hero):not(.reveal), .site-footer';
+const REVEAL_SELECTOR = '.controls, .site-header, .hero > *, main > :not(.hero):not(.reveal), .site-footer';
 
 /* Geometry and alpha caps for the sequence and the resting sky. Times live in
  * catalog.js (ARRIVAL/IGNITE); these are the sizes and ceilings. */
