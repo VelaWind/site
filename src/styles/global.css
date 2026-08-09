@@ -1164,8 +1164,9 @@ hr {
  * on .page, for a reason a future edit must not undo: the contrast suite
  * derives each element's effective background by walking ancestors'
  * background-color, and a translucent background-color on the column would
- * corrupt every measured pair. A pseudo-element is invisible to that walk and
- * to the cascade generally — it only paints.
+ * corrupt every measured pair. A pseudo-element is invisible to that specific
+ * walk — it is not an ancestor and has no background-color the walk would
+ * read. It still paints, which is the whole job.
  */
 .page::before {
   content: '';
@@ -1428,29 +1429,30 @@ hr {
 }
 
 /*
- * A card that has a real screenshot. The picture takes the panel's place rather
- * than sitting inside it, and takes its box exactly, so a row holding one card
- * that has been captured and two that have not still lines up.
- *
- * The tint above is not removed. It is what occupies the space while the file
- * is still arriving, which is the difference between a card that is loading and
- * a card with a hole in it, and it costs nothing: an opaque screenshot covers
- * it completely the moment it paints.
+ * The screenshot slot on a case-study page. Cards always run their scenes;
+ * this is where the real picture goes, in the one column wide enough to read
+ * one. Empty, it holds the exact 16/9 box the capture will occupy in the
+ * project's tint, so the layout can be judged before the picture exists and
+ * nothing reflows on the day it lands.
  */
-.card-shot {
-  /* <picture> is inline, and an inline box hands the image a line-box descender
-     the plain div never had: a few pixels of gap above the border-bottom. */
+.case-shot {
+  aspect-ratio: 16 / 9;
+  background: color-mix(in oklch, var(--card-accent, var(--accent)) 14%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  /* <picture> is inline; block removes the line-box descender under the img. */
   display: block;
+  overflow: hidden;
 }
 
-img.card-media {
+.case-shot-img {
   display: block;
   width: 100%;
   height: auto;
   /*
-   * The 16/9 above governs, and cover crops the file to it. A capture that comes
-   * back at 16/10 is then a slightly cropped screenshot rather than a taller
-   * card that pushes every other card on its row out of line with it.
+   * The 16/9 above governs, and cover crops the file to it. A capture that
+   * comes back at 16/10 is then a slightly cropped screenshot rather than a
+   * taller box that pushes the prose below it around.
    */
   object-fit: cover;
 }

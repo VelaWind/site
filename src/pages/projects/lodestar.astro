@@ -14,6 +14,7 @@
  * this page fails to build. That is intentional; see src/lib/case-study-readme.ts.
  */
 import Base from '../../layouts/Base.astro';
+import CaseShot from '../../components/CaseShot.astro';
 import { fetchCaseStudySection } from '../../lib/case-study-readme';
 import { projectByHref } from '../../lib/projects';
 
@@ -44,6 +45,8 @@ const liveUrl = 'https://lodestar-nu-six.vercel.app';
       <br />
       <a href={liveUrl}>Live site</a> · <a href={repoUrl}>Source</a>
     </p>
+
+    <CaseShot href="/projects/lodestar" />
 
     <h2>The problem</h2>
     <p>

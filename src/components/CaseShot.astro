@@ -1,0 +1,79 @@
+---
+/**
+ * The screenshot slot on a case-study page: the one place on the site where a
+ * real picture of the software is big enough to read. The cards run live
+ * scenes instead — their panel is about 345 CSS px at its narrowest, and a
+ * screenshot shrunk to that is specks — so this column, measured at a flat
+ * 544 CSS px from a 600px viewport up, is where the truth-by-photograph goes.
+ *
+ * Without a screenshot the slot renders the project's tinted panel, exactly
+ * the shape the picture will occupy, so the layout can be judged and the page
+ * does not reflow on the day the capture lands.
+ */
+import { Picture } from 'astro:assets';
+import { projectByHref } from '../lib/projects';
+
+interface Props {
+  /** The case study's route, which is also the project's identity here. */
+  href: string;
+}
+
+const { href } = Astro.props;
+const project = projectByHref(href);
+
+/*
+ * Found by glob rather than imported one per project, so adding a picture
+ * stays an edit to projects.ts and nothing else. Vite resolves this at build
+ * time; the images go through the asset pipeline and get hashed filenames.
+ */
+const shots = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/projects/*.{png,jpg,jpeg,webp,avif}',
+  { eager: true },
+);
+
+const shot = project?.screenshot
+  ? shots[`/src/assets/projects/${project.screenshot.file}`]?.default
+  : undefined;
+
+/*
+ * Named but missing stops the build, on the same reasoning as the case-study
+ * README fetch: a page that was meant to show the software and is quietly
+ * showing a coloured rectangle looks identical to one that was never given a
+ * picture, and nothing would ever report the difference.
+ */
+if (project?.screenshot && !shot) {
+  throw new Error(
+    `${project.name} names the screenshot "${project.screenshot.file}", but ` +
+      `src/assets/projects/${project.screenshot.file} does not exist. Capture it ` +
+      'to the spec in the README, or remove the screenshot field from src/lib/projects.ts.',
+  );
+}
+
+const tint = project?.accent ? `--card-accent: var(--${project.accent})` : undefined;
+
+/*
+ * The sizes attribute, measured rather than guessed: the column is 544px from
+ * a 600px viewport up and viewport-minus-padding below that. Of the emitted
+ * widths, 1120 serves 544 at 2x and 1680 covers a high-density phone showing
+ * the sub-600 layout.
+ */
+const SIZES = '(min-width: 37.5rem) 34rem, calc(100vw - 2rem)';
+---
+
+{
+  shot && project?.screenshot ? (
+    <Picture
+      class="case-shot-img"
+      pictureAttributes={{ class: 'case-shot', style: tint }}
+      src={shot}
+      alt={project.screenshot.alt}
+      widths={[560, 1120, 1680]}
+      sizes={SIZES}
+      formats={['avif']}
+      fallbackFormat="webp"
+      loading="eager"
+    />
+  ) : (
+    <div class="case-shot" style={tint} aria-hidden="true" />
+  )
+}

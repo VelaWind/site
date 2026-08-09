@@ -20,56 +20,60 @@ a page behind it is a dead link; the home page lists all of them, because a
 project with no write-up yet is still work and its repository is a real
 destination.
 
-## Project screenshots
+## Case-study screenshots
 
-A card shows a real screenshot when one exists and the accent-tinted panel when
-one does not, so the projects can be captured one at a time. Adding a picture is
-two steps: put the file in `src/assets/projects/`, then name it in
-`src/lib/projects.ts` with its alt text. A file named there and missing from
-disk stops the build rather than serving a card with a hole in it.
+The project cards always run their live canvas scenes; a real screenshot goes
+on the project's case-study page, in the slot under the lede. The split is a
+measurement, not a taste: the card panel is about 345 CSS px on the home
+page's multi-column line, and a screenshot shrunk to that is unreadable
+specks, while the case-study column holds a flat 544 CSS px from a 600px
+viewport up — the one place on the site where a picture of software is big
+enough to read.
+
+Adding a picture is two steps: put the file in `src/assets/projects/`, then
+name it in `src/lib/projects.ts` under `screenshot` with its alt text. A file
+named there and missing from disk stops the build rather than serving a page
+with a hole in it, and a `screenshot` on a project whose `caseStudy` is false
+stops the build too, because it would render nowhere and nothing would say so.
 
 **Capture to this spec.**
 
 | | |
 |---|---|
-| Dimensions | **2560 × 1440**, from a **1280 × 720** viewport captured at 2× |
+| Dimensions | **2176 × 1224**, from a **1088 × 612** viewport captured at 2× |
 | Aspect ratio | **Exactly 16:9.** Anything else is cropped from the centre |
 | Format | **PNG**, lossless, straight from the capture |
-| Minimum | 1400 px wide. Below that the largest variant is upscaled |
+| Minimum | 1120 px wide. Below that the largest variant is upscaled |
 | Filename | The project in kebab-case: `lodestar.png`, `vela-sea.png` |
 
-The viewport size is the part that is easy to get wrong. The panel is 671 CSS px
-across at its widest — measured, at a 720px viewport, the last width before the
-grid takes a second column — and about 345px on the home page's three-column
-line. A 2560px-wide *screenshot of a 2560px-wide window* shrinks to a quarter
-size in that panel and its text becomes unreadable specks. Capturing a 1280px
-viewport at 2× gives the same file size with the layout of an ordinary laptop,
-which is legible at card size and is also what the software actually looks like
-to most people using it. 16:9 is not a preference: the panel is
-`aspect-ratio: 16 / 9` and `object-fit: cover` will crop whatever does not match.
+The viewport size follows from the column, not from precedent. The slot shows
+the picture at up to 544 CSS px, so a 1088px viewport is displayed at one
+half — about the scale at which an ordinary app layout stays legible — and
+capturing it at 2× gives the 1088 device pixels a retina screen asks for.
+16:9 is not a preference: the slot is `aspect-ratio: 16 / 9` and
+`object-fit: cover` will crop whatever does not match.
 
 **What belongs in frame:**
 
 - The software doing the thing it is for. A simulation mid-run, a parameter
   moved off its default, a page of real content. Not an empty state, not a
   landing page, not a login screen, not settings.
-- The app's dark theme if it has one. The card sits on a dark surface, and a
-  white screenshot in a dark card is a rectangle of glare.
+- The app's dark theme if it has one. The slot sits on a dark page, and a
+  white screenshot there is a rectangle of glare.
 - Nothing but the app. No browser chrome, address bar, bookmarks, tab strip,
-  extension icons, OS taskbar, mouse cursor, or scrollbar. Capture the viewport,
-  not the window.
-- Nothing personal. No real name, no email, no signed-in account, no avatar, no
-  file path with a username in it. Same rule as everywhere else here.
-- The interesting part away from the edges, because the panel crops from the
+  extension icons, OS taskbar, mouse cursor, or scrollbar. Capture the
+  viewport, not the window.
+- Nothing personal. No real name, no email, no signed-in account, no avatar,
+  no file path with a username in it. Same rule as everywhere else here.
+- The interesting part away from the edges, because the slot crops from the
   centre when a capture is not exactly 16:9.
 
-**Then write the alt text**, in the same entry. It describes what is happening on
-the screen, not what the project is called — the name is the heading directly
-below it, and a screen reader that says "Lodestar, Lodestar, interactive
-astrophysics" has been told nothing by the middle one:
+**Then write the alt text**, in the same entry — one field, so a picture
+cannot be added without describing it. It describes what is happening on the
+screen, not what the project is called; the name is the page's own h1:
 
 ```ts
-image: {
+screenshot: {
   file: 'lodestar.png',
   alt: 'A dark reading page headed "Space, explained in layers you choose to '
     + 'open", with a depth control set to Curious and cards for escape '
@@ -77,20 +81,11 @@ image: {
 },
 ```
 
-**What it costs.** The build emits AVIF and WebP at 350, 700 and 1400 px wide
-and a browser fetches exactly one of them. Measured with a real 1600 × 900
-screenshot of the Lodestar deploy, on `/projects`:
-
-| | Before | After |
-|---|---|---|
-| HTML | 16,829 B | 17,547 B |
-| CSS | 16,915 B | 17,009 B |
-| Image | — | 11,716 B at 1×, 31,916 B at 2× |
-| **Total** | **33,744 B** | **46,272 B at 1×, 66,472 B at 2×** |
-
-One screenshot roughly doubles the page on a retina screen, and it is still
-under 70 KB — smaller than a single web font, which this site also does not
-have. The image is what the page weighs now; the rest is rounding.
+**What it costs.** The build emits AVIF and WebP at 560, 1120 and 1680 px wide
+and a browser fetches exactly one. When this slot was a card slot, one real
+1600 × 900 capture measured 11.7 KB at 1× and 31.9 KB at 2× as AVIF — the
+larger emitted widths here will land in the same tens-of-kilobytes range,
+still smaller than the web font this site does not have.
 
 ## Unfurls
 

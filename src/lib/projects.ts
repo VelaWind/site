@@ -45,42 +45,37 @@ export interface Project {
    */
   accent?: 'star' | 'sea';
   /**
-   * A real screenshot of the software, if one has been taken.
+   * A real screenshot of the software, shown on this project's CASE-STUDY
+   * page — not on its card. The cards always run their live scenes: the card
+   * panel is 345 CSS px on the home page's multi-column line, and a wide
+   * screenshot shrunk to that is specks, which is less honest than a drawing,
+   * not more. The case-study column is where a picture is big enough to read.
    *
-   * Optional, and the absence is the ordinary state rather than a gap waiting
-   * to be filled: a card without one falls back to the tinted panel, so the
-   * projects can gain pictures one at a time and the ones not yet captured go
-   * on looking finished rather than looking broken.
+   * Renamed from `image` when the meaning changed: a field called `image` on
+   * a card-owning type would have kept promising the card.
    *
    * The file lives in src/assets/projects/ and is named here rather than
-   * imported, so adding a picture stays an edit to this array and nothing else.
-   * Capture it to the spec in the README; a file named here that is not on disk
-   * fails the build rather than serving a card with a hole in it.
+   * imported, so adding a picture stays an edit to this array and nothing
+   * else. Capture it to the spec in the README; a file named here that is not
+   * on disk fails the build rather than serving a page with a hole in it, and
+   * a screenshot on a project with no case study fails the build too — see
+   * the check under the array.
    *
-   * The alt text is required alongside the file, which is why this is one field
-   * and not two. Whether an image needs a description is a decision somebody
-   * has to make, and making the picture impossible to add without also writing
-   * the sentence is cheaper than remembering to come back for it.
+   * The alt text is required alongside the file, which is why this is one
+   * field and not two: making the picture impossible to add without also
+   * writing the sentence is cheaper than remembering to come back for it.
    */
-  image?: {
+  screenshot?: {
     /** Filename inside src/assets/projects/, extension included. */
     file: string;
     /**
      * What the software is doing in this frame. Not the project's name: that
-     * is the heading immediately below, and a screen reader announcing
-     * "Lodestar, Lodestar, interactive astrophysics..." has been told nothing
-     * by the middle one. Describe the screen.
+     * is the page's own h1, and a screen reader announcing "Lodestar,
+     * Lodestar, interactive astrophysics..." has been told nothing by the
+     * middle one. Describe the screen.
      */
     alt: string;
   };
-  /**
-   * The catalogue star this project is tethered to in the sky, by the star's
-   * id in src/scripts/sky/catalog.js. The mapping lives here, with the
-   * projects, rather than in the sky module: which star belongs to which
-   * project is a fact about the project. Optional — a project without an
-   * anchor simply has no tether, and nothing throws.
-   */
-  anchor?: string;
   /** The repository's default branch. Not every repo calls it main. */
   branch?: string;
   /**
@@ -90,6 +85,15 @@ export interface Project {
    * says nothing is worse than no badge.
    */
   status?: 'live' | 'playable' | 'wip';
+  /**
+   * The catalogue star this project is tethered to in the sky, by the star's
+   * id in src/scripts/sky/catalog.js. The mapping lives here, with the
+   * projects, rather than in the sky module: which star belongs to which
+   * project is a fact about the project. Optional — a project without an
+   * anchor simply has no tether, and nothing throws. Kept as the last field
+   * in every entry below, so the four read alike.
+   */
+  anchor?: string;
 }
 
 export const projects: Project[] = [
@@ -121,20 +125,37 @@ export const projects: Project[] = [
     href: 'https://github.com/VelaWind/veritas',
     caseStudy: false,
     branch: 'master',
+    tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
     // Miaplacidus, in the keel: the part that keeps a ship true.
     anchor: 'miaplacidus',
-    tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
   },
   {
     name: 'Anchorfile',
     blurb: 'A command-line tool that reads a repository and writes the context file an AI agent needs.',
     href: 'https://github.com/VelaWind/anchorfile',
     caseStudy: false,
+    tags: ['TypeScript', 'Node', 'commander', 'npm'],
     // Naos, in Puppis. The name means "ship".
     anchor: 'naos',
-    tags: ['TypeScript', 'Node', 'commander', 'npm'],
   },
 ];
+
+/*
+ * A screenshot renders on the case-study page and nowhere else, so a project
+ * that has one and no case study has a picture that silently renders nowhere.
+ * That is the same failure the missing-file throw exists to catch — something
+ * that was meant to be shown and is quietly not being shown — so it fails the
+ * build the same way, at the moment the data first loads.
+ */
+for (const project of projects) {
+  if (project.screenshot && !project.caseStudy) {
+    throw new Error(
+      `${project.name} has a screenshot but no case study, so the screenshot ` +
+        'would render nowhere. Add the case study first, or remove the ' +
+        'screenshot field from src/lib/projects.ts.',
+    );
+  }
+}
 
 /** The entries /projects is allowed to list. */
 export const caseStudies = projects.filter((p) => p.caseStudy);
