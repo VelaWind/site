@@ -109,20 +109,21 @@ const liveUrl = 'https://velawind.github.io/vela-sea/';
       measures the difference between them.
     </p>
 
-    <h2>What I would change</h2>
+    <h2>What should change</h2>
     <p>
       The least comfortable one first. <code>test_cog_math.py</code> holds a
       hand-copied body of the function at <code>render/chart.py</code> line 140,
       described in its own docstring as an exact copy of that function so the
-      logic can be tested without importing Pygame. The two agree today; I
-      checked them line by line. Nothing keeps them agreeing. Two of the
+      logic can be tested without importing Pygame. The two agree today,
+      checked line by line. Nothing keeps them agreeing. Two of the
       avoidance tests do the same thing from the other
       end: <code>tests/test_collision.py</code> line 70
       and <code>tests/test_traffic.py</code> line 72 each re-implement the
       steering step that the game itself runs at <code>main.py</code> line 2503,
       so they pass against a loop the game does not execute. This is the same
-      parallel-texts-drift failure the Lodestar case study is built on, in my own
-      repository, written after I had made the argument.
+      parallel-texts-drift failure the Lodestar case study is built on,
+      reproduced under the same handle, after the argument had already been
+      made.
     </p>
     <p>
       Then the two structural ones. <code>main.py</code> is 3,544 lines, and the
