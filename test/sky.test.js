@@ -21,6 +21,16 @@ const GEOMETRY = `(() => {
   };
 })()`;
 
+/*
+ * The 8/255 alpha floor is load-bearing in both directions. Below it sits the
+ * nebula, whose resting alpha of 0.03 paints at ~7.65/255 — lowering the
+ * floor to "see more stars" was tried and made the count measure the nebula's
+ * area, which scales with min(width, height) and drowned every comparison.
+ * Above it, the dimmest smallest field stars (alpha capped at 0.28 for
+ * contrast, radii down to 0.25px) land within a whisker of the floor, so how
+ * many of a random sky's stars register is itself slightly random. The floor
+ * stays; the slope assertions below carry the tolerance instead.
+ */
 const INK = `(() => { const c = document.querySelector('#sky'), g = c.getContext('2d');
   const d = g.getImageData(0, 0, c.width, c.height).data;
   let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n += 1; return n; })()`;
@@ -84,9 +94,17 @@ test('the star field scales with the viewport area and stops at the cap', async 
 
   // The floor: both clamped to 60 stars, so similar ink despite 1.5x the width.
   atMost(ink[500], Math.round(ink[320] * 1.4), `painted pixels at 500px against 320px, both on the 60-star floor (measured ${ink[500]} and ${ink[320]})`);
-  // The slope: more area, more stars.
-  atLeast(ink[900], ink[320], `painted pixels at 900px against 320px (measured ${ink[900]} and ${ink[320]})`);
-  atLeast(ink[1400], ink[900], `painted pixels at 1400px against 900px (measured ${ink[1400]} and ${ink[900]})`);
+  /*
+   * The slope, with a stated tolerance: each random sky rolls its own radii
+   * and alphas, and with the dimmest stars a whisker above the ink floor a
+   * 103-star sky once measured 6% fewer painted pixels than a 60-star one
+   * (316 against 336). Adjacent steps therefore allow 0.85x for that noise,
+   * and the full-span pair — 160 stars against 60 — is asserted strictly,
+   * because if THAT ever inverts, the law is broken and not the proxy.
+   */
+  atLeast(ink[900], Math.round(ink[320] * 0.85), `painted pixels at 900px against 0.85x the 320px sky (measured ${ink[900]} and ${ink[320]})`);
+  atLeast(ink[1400], Math.round(ink[900] * 0.85), `painted pixels at 1400px against 0.85x the 900px sky (measured ${ink[1400]} and ${ink[900]})`);
+  atLeast(ink[1400], Math.round(ink[320] * 1.4), `painted pixels at 1400px (160 stars) against 1.4x the 320px sky (60 stars) — the strict full-span pair (measured ${ink[1400]} and ${ink[320]})`);
   // The cap: both clamped to 260 stars, so the wider one must not paint meaningfully more.
   atMost(
     ink[3200],
