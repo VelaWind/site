@@ -28,7 +28,9 @@ measurement, not a taste: the card panel is about 345 CSS px on the home
 page's multi-column line, and a screenshot shrunk to that is unreadable
 specks, while the case-study column holds a flat 544 CSS px from a 600px
 viewport up — the one place on the site where a picture of software is big
-enough to read.
+enough to read. Until a project has a screenshot, the built page renders
+nothing there; only `astro dev` shows a placeholder box, for judging the
+layout before a capture exists.
 
 Adding a picture is two steps: put the file in `src/assets/projects/`, then
 name it in `src/lib/projects.ts` under `screenshot` with its alt text. A file
@@ -108,28 +110,47 @@ turned down: five packages, transitively, to print four URLs.
 
 ## JavaScript
 
-There is one script, and it is on the two routes that show project cards. It
-writes the pointer position into two custom properties so the card spotlight can
-follow the cursor, which is the one thing here that CSS cannot express: there is
-no pointer position to read in CSS. It is about fifteen lines, inline, no
-dependencies, and it lives in `src/components/ProjectCard.astro`.
+Every route ships script now — the sky sees to that — but the guarantee
+underneath is unchanged: no route needs script to be read, navigated or used,
+and everything below is vanilla, first-party, and dependency-free.
 
-Everything it feeds is behind `prefers-reduced-motion`, `hover: hover` and
-`pointer: fine` in the stylesheet, so it drives nothing for a reader who has
-asked for stillness or is on a touch screen. With JavaScript off the gradient
-falls back to its centre position and the rest of the site is unchanged: no
-route needs script to be read, navigated or used.
+What runs, and why each piece exists:
 
-`/projects/lodestar` and `/projects/vela-sea` ship zero script tags.
+- **One render-blocking inline script** in the head, and it is the only thing
+  allowed to block: it puts the stored theme on the root before first paint
+  (the alternative is the white flash), and it arms the arrival sequence. The
+  arming matters more than the animation. The reveal styles default to
+  VISIBLE; the hidden pre-reveal state is keyed to an attribute only this
+  script sets, and only when `prefers-reduced-motion` allows motion — so a
+  reader with JavaScript off, a crawler, a print job and a reduced-motion
+  reader all get the finished page with nothing to un-hide. The same script
+  arms a 4-second failsafe that forces the final state whatever happens
+  afterwards, so a script error cannot make the site invisible.
+- **The sky module** (`src/scripts/sky/`, ~9 KB minified): the star field, the
+  real Vela–Carina–Puppis catalogue, the supernova arrival, and the card
+  tethers, on one canvas. Every colour it paints is read from the stylesheet's
+  tokens, not from a second palette in JS. Under reduced motion it draws one
+  static frame and runs no loop at all; a hidden tab pauses it.
+- **The card scenes** (`src/components/ProjectCard.astro` driving
+  `src/scripts/sky/scenes.js`): four pure functions on one shared
+  `requestAnimationFrame` loop, stopped entirely for off-screen cards by an
+  IntersectionObserver. The same component keeps the spotlight script, which
+  writes the pointer position into two custom properties — the one thing here
+  CSS cannot express — and everything it feeds sits behind
+  `prefers-reduced-motion`, `hover: hover` and `pointer: fine`.
+- **Deferred site chrome**: the theme toggle, the command palette (a native
+  `<dialog>`, so the focus trap and Escape are the browser's), and the eggs.
+  Every control that needs script is hidden until script reveals it, so a
+  reader without JavaScript is never shown a dead button.
 
 ## Tests
 
 `npm test` builds the site, serves the built output, drives a real headless
-Chrome over the DevTools Protocol, and tears both down again. It needs nothing
-installed that is not already here: Node has a global WebSocket and a global
-fetch, and CDP is JSON over one socket, so the whole harness is `node --test`
-and about two hundred lines in `test/`. Chrome itself has to exist on the
-machine; set `CHROME_PATH` if it is somewhere unusual.
+Chrome over the DevTools Protocol, and tears both down again — 51 tests in ten
+files. It needs nothing installed that is not already here: Node has a global
+WebSocket and a global fetch, and CDP is JSON over one socket, so the harness
+and runner are about five hundred lines in `test/`. Chrome itself has to exist
+on the machine; set `CHROME_PATH` if it is somewhere unusual.
 
 One file per concern, named for what it protects:
 
@@ -137,11 +158,15 @@ One file per concern, named for what it protects:
 |---|---|
 | `print.test.js` | Nothing that carries content prints invisible. |
 | `still-under-reduced-motion.test.js` | Under `reduce`, nothing declares motion and successive frames are identical, canvas included. |
-| `contrast-aa.test.js` | Every text and background pair, both schemes, all four routes, against 4.5:1 (3:1 for large text). |
+| `contrast-aa.test.js` | Every declared text and background pair, both schemes, all four routes, against 4.5:1 (3:1 for large text). |
+| `contrast-rendered.test.js` | The worst rendered pixel behind each measured text block clears 4.5:1 — sky and scrim included, which the declared pairs cannot see. |
 | `keyboard-order.test.js` | Every tab stop is on screen and shows focus; the palette traps focus and gives it back. |
 | `works-without-javascript.test.js` | Every link works, no section is invisible, no layout collapses, and no dead control is painted. |
 | `palette.test.js` | Filtering, selection, activation, and that every action has a plain equivalent elsewhere. |
-| `sky.test.js` | Canvas geometry, the devicePixelRatio cap, and the constellation. |
+| `sky.test.js` | Canvas geometry, the devicePixelRatio cap, the area-based field-star law, and the ship egg lighting and dimming. |
+| `sky-math.test.js` | The projection against the real catalogue, with no browser: the east-is-left RA flip, radius monotonic in magnitude, every link, hull entry and project anchor resolving, the easing, and the arrival-delay clamp. |
+| `scenes.test.js` | The four card scenes as pure functions: hostile boxes and times without throwing, `globalAlpha` handed back, and that each actually paints. |
+| `arrival.test.js` | With scripts disabled the lede is fully visible; under `reduce` no animation loop runs; on a cold load the lede is readable within 2.2s of navigation. |
 
 Print runs first, on its own, because it caught the one defect that was
 invisible in every browser check: the sections revealed by a scroll timeline
@@ -176,7 +201,7 @@ time and renders the section between these two markers:
 
 The prose has one home, in the Lodestar repository. There is no committed copy
 and no fallback: if the fetch fails, the repository goes private, or either
-marker is removed, `src/lib/lodestar-readme.ts` throws and the build stops. A
+marker is removed, `src/lib/case-study-readme.ts` throws and the build stops. A
 page quietly serving a stale architecture section is the failure this is meant
 to prevent.
 
