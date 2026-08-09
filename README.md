@@ -96,12 +96,25 @@ Every route carries its own Open Graph and Twitter tags, written once in
 passes, so a shared case study unfurls as that case study rather than as the
 front page. Case studies pass `type="article"`; everything else is a website.
 
-`public/og.png` is the 1200×630 card, and it is drawn by
+`src/assets/og.png` is the 1200×630 card, and it is drawn by
 `node scripts/make-og-image.js` — headless Chrome rendering `src/styles/global.css`,
 so the card is the site's own tokens rather than a hand-matched copy of them in
-an image editor. Rerun it after changing a colour or a type step. The output is
+an image editor. Rerun it after changing a colour, a type step, or the card's
+line in `src/lib/og-card.js` — that constant is the line's one home, shared by
+the generator, the home lede it must match, and the image alt on every route,
+and `test/og-card.test.js` fails the suite when the three drift. The generator
+also writes the line into the PNG as a `tEXt` Description chunk, which is how
+the test knows what the committed pixels were drawn from. The output is
 committed, because a card changes about once a year and making every deploy
 depend on an installed browser would be a poor trade for that.
+
+The card goes through the asset pipeline rather than `public/`, so its URL
+carries a content hash and changes whenever the image does — the only way a
+new picture moves through HTTP caches already holding the old one. `/og.png`,
+the address before the hashing, still serves the current card's bytes via
+`src/pages/og.png.ts`, so shared links do not 404. None of this reaches into
+a scraper's own stored preview: LinkedIn, Slack and the rest keep their copy
+until their own expiry or a manual re-scrape.
 
 `sitemap.xml` is a route (`src/pages/sitemap.xml.ts`) rather than an
 integration; it takes its case-study URLs from `src/lib/projects.ts`, so a new

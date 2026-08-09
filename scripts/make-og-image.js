@@ -1,5 +1,5 @@
 /**
- * Draws public/og.png, the 1200x630 card every route unfurls with.
+ * Draws src/assets/og.png, the 1200x630 card every route unfurls with.
  *
  * It is rendered by the same browser the tests use, from the site's own
  * stylesheet, so the card is the site's colours and the site's type rather than
@@ -9,6 +9,12 @@
  * The output is committed rather than generated during the build. A card is a
  * static asset that changes about once a year, and making every deploy depend
  * on a browser being installed would be a poor trade for that.
+ *
+ * It lives in src/assets rather than public so the asset pipeline gives it a
+ * content-hashed filename: a changed card is a changed address, which is the
+ * only thing that moves an image through HTTP caches that already hold the
+ * old one. /og.png stays alive too - src/pages/og.png.ts serves these same
+ * bytes at the old address, so links shared before the hashing do not 404.
  *
  * What is on it: the wordmark, the positioning line, and the address of the
  * site. No photograph, no stock art, and no real name — the same rule the rest
@@ -193,12 +199,12 @@ try {
     clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 0.5 },
   });
 
-  const out = join(ROOT, 'public/og.png');
+  const out = join(ROOT, 'src/assets/og.png');
   const bytes = withDescription(Buffer.from(shot.data, 'base64'), LEDE);
   writeFileSync(out, bytes);
   ws.close();
 
-  console.log(`wrote public/og.png, ${Math.round(bytes.length / 1024)} KB`);
+  console.log(`wrote src/assets/og.png, ${Math.round(bytes.length / 1024)} KB`);
 } finally {
   clean();
 }
