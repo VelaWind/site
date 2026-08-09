@@ -185,11 +185,16 @@ const scene = project.name.toLowerCase().replace(/\s+/g, '-');
         }, 150) as unknown as number;
       });
 
-      // A theme change moves --c with it; recolour without waiting for a frame.
+      // A theme change moves --c with it; recolour without waiting for a
+      // frame. `style` is watched too, because the hue-reroll egg writes
+      // --hue-sky as an inline style on the root and two of the four scenes
+      // inherit --c from --accent — without it they kept the old accent
+      // until a resize. Same filter as the sky module's observer; keep the
+      // two lists in step.
       new MutationObserver(() => {
         for (const item of items) size(item);
         if (still.matches) settle(); else wake();
-      }).observe(document.documentElement, { attributeFilter: ['data-theme'] });
+      }).observe(document.documentElement, { attributeFilter: ['data-theme', 'style'] });
     }
   }
 </script>
