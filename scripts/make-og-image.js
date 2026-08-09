@@ -32,9 +32,8 @@ const tokens = readFileSync(join(ROOT, 'src/styles/global.css'), 'utf8');
 
 // The positioning line, kept identical to the one on the home page.
 const LEDE =
-  'Computer science student. I build systems whose ground truth comes from ' +
-  'something real: SI constants, the maritime collision rules, database ' +
-  'constraints, the filesystem.';
+  'Four projects, each answerable to something outside itself: SI constants, ' +
+  'the maritime collision rules, database constraints, the filesystem.';
 
 /*
  * data-theme="dark" rather than a media query, so the card is dark whatever the
