@@ -209,29 +209,51 @@ export interface CaseStudySection {
   sourceUrl: string;
 }
 
+/*
+ * One fetch per README per build, however many consumers ask. The Lodestar
+ * case study renders a section of the file and the home page's stat check
+ * (src/lib/lodestar-stats.ts) reads the whole of it; two requests would be
+ * two chances to see two different revisions of one source of truth inside
+ * one build. The cache holds the promise rather than the body so concurrent
+ * callers share the in-flight request instead of racing it.
+ */
+const readmes = new Map<string, Promise<string>>();
+
+/** The validated raw README for a source: fetched, status-checked, heading-checked. */
+export function fetchReadme(source: CaseStudySource): Promise<string> {
+  const url = readmeUrl(source);
+  let pending = readmes.get(url);
+  if (!pending) {
+    pending = (async () => {
+      let result: HttpResult;
+      try {
+        result = await request(url);
+      } catch (cause) {
+        fail(source, `could not reach the README: ${(cause as Error).message}`);
+      }
+
+      if (result.status !== 200) {
+        fail(source, `request returned HTTP ${result.status} ${result.statusText}`.trimEnd());
+      }
+
+      if (!result.body.startsWith(source.expectedHeading)) {
+        fail(
+          source,
+          `the response does not start with ${JSON.stringify(source.expectedHeading)} ` +
+            `(first 80 characters: ${JSON.stringify(result.body.slice(0, 80))})`,
+        );
+      }
+
+      return result.body;
+    })();
+    readmes.set(url, pending);
+  }
+  return pending;
+}
+
 export async function fetchCaseStudySection(source: CaseStudySource): Promise<CaseStudySection> {
   const url = readmeUrl(source);
-
-  let result: HttpResult;
-  try {
-    result = await request(url);
-  } catch (cause) {
-    fail(source, `could not reach the README: ${(cause as Error).message}`);
-  }
-
-  if (result.status !== 200) {
-    fail(source, `request returned HTTP ${result.status} ${result.statusText}`.trimEnd());
-  }
-
-  const readme = result.body;
-
-  if (!readme.startsWith(source.expectedHeading)) {
-    fail(
-      source,
-      `the response does not start with ${JSON.stringify(source.expectedHeading)} ` +
-        `(first 80 characters: ${JSON.stringify(readme.slice(0, 80))})`,
-    );
-  }
+  const readme = await fetchReadme(source);
 
   const start = readme.indexOf(START_MARKER);
   if (start === -1) fail(source, 'the start marker is missing from the README');

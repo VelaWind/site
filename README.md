@@ -219,6 +219,20 @@ marker is removed, `src/lib/case-study-readme.ts` throws and the build stops. A
 page quietly serving a stale architecture section is the failure this is meant
 to prevent.
 
+The home page's stat figures ride the same fetch. The three Lodestar numbers
+(tests, sanity checks, layers per topic) are hand-written in
+`src/lib/lodestar-stats.ts` next to a regex that must find each one in the
+fetched README, and every build verifies them: a README that no longer agrees
+fails the build naming both values. Checked rather than derived, because the
+README states them mid-sentence in prose, and a regex that reads prose onto
+the front page can be silently wrong about which sentence it read — a red
+build a human resolves cannot. No network is added anywhere: the check shares
+the case study's single request, and an unreachable GitHub already failed the
+build before the check existed. The fourth figure, the public repository
+count, is still counted by hand; its source is the GitHub account, and the
+unauthenticated API's per-IP rate limit would make a shared build runner fail
+red for reasons that are not faults.
+
 The framing above the provenance note on that page (the problem, why the
 obvious approach did not work, the trade-off) is written in the page itself,
 because it is portfolio framing rather than repository documentation.

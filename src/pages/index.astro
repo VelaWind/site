@@ -10,21 +10,27 @@
  */
 import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
+import { lodestarStats } from '../lib/lodestar-stats';
 import { projects } from '../lib/projects';
 import { EMAIL, GITHUB } from '../lib/site';
 
 /*
- * Every figure here was read out of a repository rather than remembered:
- *   324  lodestar README, "npm test is 324 Vitest tests across 8 files"
- *    33  lodestar README, "the 33 physics sanity checks as assertions"
- *     7  lodestar README, "Every topic is one page of seven layers"
- *     5  the public repositories under github.com/VelaWind
+ * Every figure here was read out of a repository rather than remembered, and
+ * the three Lodestar figures no longer rely on the reading staying done: they
+ * are verified against the fetched Lodestar README on every build, and a
+ * build where the README disagrees fails naming both numbers — see
+ * src/lib/lodestar-stats.ts.
+ *
+ * The repository count is the one figure still counted by hand. Its source is
+ * the GitHub account, which the build does not query: the unauthenticated API
+ * is rate-limited per IP, and a build that fails on a shared runner's quota
+ * would teach everyone to distrust red. Verified 2026-08-10: anchorfile,
+ * lodestar, site, vela-sea, veritas.
+ *
  * A number that stops being true is a number to delete, not to round.
  */
 const stats = [
-  { figure: '324', label: 'tests in Lodestar' },
-  { figure: '33', label: 'physics sanity checks' },
-  { figure: '7', label: 'layers per topic' },
+  ...(await lodestarStats()),
   { figure: '5', label: 'public repositories' },
 ];
 ---
