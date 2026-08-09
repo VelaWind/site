@@ -1699,6 +1699,16 @@ hr {
 .hero .lede {
   --flow-space: var(--space-m);
   max-width: 46ch;
+  /*
+   * Body ink, not the .lede default of --text-muted, and the reason is
+   * measured: this is the one text block on the full-intensity sky with no
+   * scrim, and a single field star at the 0.28 alpha cap composites to
+   * #505356 under it — 3.25:1 against the muted ink, a failure on an
+   * ordinary sky, not a tail event. The same pixel against this ink is
+   * 6.12:1. It also corrects an inversion: the first sentence anyone reads
+   * was the dimmest text on the site, on its brightest ground.
+   */
+  color: var(--text);
 }
 
 .actions {

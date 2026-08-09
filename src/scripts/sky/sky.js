@@ -166,12 +166,15 @@ export function mountSky(canvas) {
         fy,
         r: 0.25 + Math.random() * 0.9,
         /*
-         * Alpha capped at 0.28, and the cap is a contrast decision: at 0.36 a
-         * field star directly under body text measured 3.99:1 against the
-         * muted foreground — one pixel in sixty thousand, but on a site whose
-         * subject is claims that survive checking, 0.28 buys the guarantee
-         * and costs sparkle nobody can perceive. The rendered-pixel contrast
-         * test holds this; raising the cap will fail it, by design.
+         * Alpha capped at 0.28. The cap alone is NOT a contrast guarantee,
+         * which is what an earlier note here claimed: a star at this cap
+         * composites to ~#505356 over the dark ground, 3.25:1 against
+         * --text-muted, and one did exactly that under the hero lede on an
+         * ordinary sky (measured 4.05:1 at partial twinkle). The guarantee
+         * is the pair: text sitting on the bare sky wears --text, against
+         * which the same worst star measures 6.12:1 — see .hero .lede in
+         * global.css. The cap still sets that margin, so raising it is
+         * still a contrast decision the rendered-pixel test will veto.
          */
         a: 0.06 + Math.random() * 0.22,
         rate: 0.0004 + Math.random() * 0.0011,

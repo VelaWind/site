@@ -11,14 +11,19 @@
  * already proved.
  *
  * The threshold is 4.5:1 for every block, including the ones sitting directly
- * on the sky at full intensity. That is only assertable because the field-star
- * alpha is capped at 0.28 in the sky module — at the old 0.36 cap a star under
- * text measured 3.99:1, and this test is what keeps that cap honest: raise it
- * and this goes red. Star placement is random per load, so the assertion
- * leans on the analytic floor (brightest possible star over the darkest
- * ground) rather than on any particular sky; a two-star overlap could in
- * principle dip further, which is rare enough that a failure here should be
- * read first as "the cap moved" and only then as "an unlucky sky".
+ * on the sky at full intensity. Star placement is random per load, so one
+ * passing run proves only that no bright star landed under a block on that
+ * load. An earlier note here read a single post-cap measurement of 6.05:1 as
+ * an analytic floor; it was not — it was a sky where no bright star sat under
+ * the lede. The arithmetic: a field star at the 0.28 alpha cap composites to
+ * ~#505356 over the dark ground, which is 3.25:1 against --text-muted, so an
+ * ordinary star under muted ink fails with no overlap required, and one
+ * measured 4.05:1 there in the wild. The hero lede therefore wears --text,
+ * against which that same worst single star measures 6.12:1. What stays
+ * genuinely rare is two capped stars with near-coincident centres — 3.19:1
+ * even against --text — so a failure here should be read first as "an
+ * exposed block wears too dim an ink" or "the cap moved", and only then as
+ * that overlap.
  */
 import { test } from 'node:test';
 import { inflateSync } from 'node:zlib';
@@ -164,6 +169,10 @@ for (const scheme of ['light', 'dark']) {
         path = block.path;
       }
       const m = await worstPixel(page, block.selector);
+      // Reported on pass as well as failure: this suite's passes are samples
+      // of a random sky, and a pass with no number cannot be compared across
+      // runs when someone asks whether a margin is shrinking.
+      t.diagnostic(`${scheme} ${block.path} ${block.selector}: worst ${m.worst.toFixed(2)}:1 (${m.text} over ${m.at})`);
       atLeast(
         Number(m.worst.toFixed(2)),
         AA,
