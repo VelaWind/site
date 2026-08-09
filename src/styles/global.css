@@ -1081,7 +1081,7 @@ hr {
  * Six things that do nothing until somebody goes looking for them. The rules
  * they all keep: none of them moves anything in the layout, none of them adds
  * or removes a tab stop, and none can fire without a deliberate key sequence,
- * a deliberate URL, or five clicks on a ten-pixel dot.
+ * a deliberate URL, or five rapid clicks on the headline's gradient phrase.
  */
 
 /*
@@ -1611,54 +1611,7 @@ hr {
   padding-block: var(--space-2xl) var(--space-xl);
 }
 
-/*
- * The availability pill. The dot is decoration and carries no meaning: the
- * sentence beside it says the whole thing, so a reader who cannot see the
- * colour or the pulse loses nothing.
- */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-3xs) var(--space-xs);
-  border: 1px solid color-mix(in oklab, var(--live) 45%, var(--bg));
-  border-radius: var(--radius-chip);
-  background: var(--bg);
-  color: var(--live);
-  font-size: var(--text-s);
-}
-
-.pill-dot {
-  width: var(--space-2xs);
-  height: var(--space-2xs);
-  border-radius: 50%;
-  background: currentcolor;
-  flex: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .pill-dot {
-    animation: pulse-dot 2.4s ease-in-out infinite;
-  }
-}
-
-/*
- * Opacity only. A dot that also scales makes the pill's text reflow on some
- * platforms, and the point is a heartbeat, not a size change.
- */
-@keyframes pulse-dot {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.35;
-  }
-}
-
 .headline {
-  --flow-space: var(--space-m);
   font-size: clamp(var(--text-2xl), 1.3rem + 5.6vw, var(--text-4xl));
   line-height: 1.05;
   letter-spacing: -0.03em;

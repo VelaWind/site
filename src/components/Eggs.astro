@@ -85,36 +85,40 @@
     }), 4400);
   });
 
-  /* 3 ------------------------------------ five clicks on the availability dot --
+  /* 3 --------------------------------- five clicks on the gradient phrase --
    * Rerolls --hue-sky. The point it proves is that the palette is one token
    * deep: --accent, --accent-strong and --rule are all oklch with that hue
    * substituted, so moving one number moves every link, focus ring, hairline
    * and the progress bar together, in both schemes, with nothing else touched.
    *
-   * It used to count clicks on the wordmark orb, and that was wrong. The orb is
-   * inside the anchor, so counting clicks meant calling preventDefault on it,
-   * which cost the logo its navigation on every device with a mouse: a
+   * The host is the headline's "something real" span, and the choice is
+   * constrained by history. The counter began on the wordmark orb, which is
+   * inside the anchor: counting clicks there meant preventDefault on a link,
+   * which cost the logo its navigation on every device with a mouse — a
    * permanent, universal affordance traded for the least discoverable of the
-   * six. The dot in the availability pill is decorative in exactly the same way
-   * and sits in a <p>, so clicking it has no default behaviour to suppress and
-   * nothing anywhere is taken away.
+   * six. (A dblclick with the single click let through was tested and does
+   * not work either: the first click of a double click navigates and tears
+   * the document down before the handler runs.) It then lived on the
+   * availability pill's dot, which was decorative and sat in a <p>; the pill
+   * came off with the rest of the personal detail. This span keeps every
+   * property that made the dot safe — no ancestor anchor, so no default
+   * behaviour to suppress and no preventDefault anywhere; not a tab stop, so
+   * keyboard order is untouched — and adds one the dot never had: the
+   * gradient's middle stop IS --accent, so the words being clicked visibly
+   * change with the reroll.
    *
-   * The obvious alternative was a dblclick on the orb, on the theory that
-   * letting the single click through costs nothing. It does not survive
-   * contact: dispatching a real double click on a link navigates on the FIRST
-   * click and tears the document down, so the dblclick handler never runs in a
-   * live page. Measured, not assumed. It would have needed the same
-   * preventDefault and bought nothing.
+   * Rapid clicks on text also cycle the browser's word and sentence
+   * selection. Left alone deliberately: suppressing it means user-select:
+   * none, which takes copying the headline away from everyone to polish an
+   * egg — the same trade the orb version got wrong.
    *
    * Behind `pointer: fine`, so on a touch screen the handler does not exist.
-   * The dot is an aria-hidden span and is not focusable, so nothing here adds,
-   * removes or reorders a tab stop.
    */
   const HUES: Record<string, number> = { star: 78, live: 150, sea: 195, sky: 250, vio: 305 };
-  const dot = document.querySelector<HTMLElement>('.pill-dot');
-  if (fine && dot) {
+  const phrase = document.querySelector<HTMLElement>('.headline-accent');
+  if (fine && phrase) {
     let clicks: number[] = [];
-    dot.addEventListener('click', (event) => {
+    phrase.addEventListener('click', (event) => {
       const now = event.timeStamp;
       clicks = [...clicks, now].filter((t) => now - t < 1400);
       if (clicks.length < 5) return;
@@ -185,7 +189,7 @@ Six things are hidden in this page, and none of them changes anything you can
 break:
   1. type "vela" anywhere        light the constellation, type it again to dim
   2. ↑↑↓↓←→←→BA                  gravity, for 2.6 seconds
-  3. click the availability dot ×5  reroll the accent hue, one token deep
+  3. click “something real” ×5   reroll the accent hue, one token deep
   4. hover the wordmark          Greek, briefly
   5. this banner
   6. ?grid                       a 4rem rhythm grid, for checking alignment
