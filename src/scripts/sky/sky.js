@@ -165,7 +165,15 @@ export function mountSky(canvas) {
         fx,
         fy,
         r: 0.25 + Math.random() * 0.9,
-        a: 0.06 + Math.random() * 0.3,
+        /*
+         * Alpha capped at 0.28, and the cap is a contrast decision: at 0.36 a
+         * field star directly under body text measured 3.99:1 against the
+         * muted foreground — one pixel in sixty thousand, but on a site whose
+         * subject is claims that survive checking, 0.28 buys the guarantee
+         * and costs sparkle nobody can perceive. The rendered-pixel contrast
+         * test holds this; raising the cap will fail it, by design.
+         */
+        a: 0.06 + Math.random() * 0.22,
         rate: 0.0004 + Math.random() * 0.0011,
         phase: Math.random() * Math.PI * 2,
         z: 0.15 + Math.random() * 0.85, // depth: near stars answer the pointer most
@@ -509,11 +517,15 @@ export function mountSky(canvas) {
   });
 
   // A theme change rewrites the tokens; re-read and, without a loop, repaint.
+  // `style` is watched as well as `data-theme` because the hue-reroll egg
+  // writes --hue-sky as an inline style on the root: same tokens, same
+  // re-read, one mechanism for both. The scene driver watches the identical
+  // filter — keep the two lists in step.
   const retheme = () => {
     readTheme();
     if (!raf) draw(t0 + 1e7);
   };
-  new MutationObserver(retheme).observe(root, { attributeFilter: ['data-theme'] });
+  new MutationObserver(retheme).observe(root, { attributeFilter: ['data-theme', 'style'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
 
   still.addEventListener('change', () => {
