@@ -85,9 +85,14 @@ const SIZES = '(min-width: 46rem) 34rem, 94vw';
 // screen reader learns where the link goes before following it rather than
 // after. On-site case studies need no such warning: that is the default.
 const away = !project.caseStudy;
+
+// The scene key for the card's live drawing, derived from the name the same
+// way a screenshot filename is. Only the fallback panel gets a scene: a real
+// picture of the software beats a sketch of it.
+const scene = project.name.toLowerCase().replace(/\s+/g, '-');
 ---
 
-<li class="card" style={project.accent ? `--c: var(--${project.accent})` : undefined}>
+<li class="card" style={project.accent ? `--c: var(--${project.accent})` : undefined} data-anchor={project.anchor}>
   {
     shot ? (
       <Picture
@@ -102,7 +107,9 @@ const away = !project.caseStudy;
         loading={eager ? 'eager' : 'lazy'}
       />
     ) : (
-      <div class="card-media" style={mediaStyle} aria-hidden="true" />
+      <div class="card-media" style={mediaStyle} aria-hidden="true">
+        <canvas class="card-scene" data-scene={scene}></canvas>
+      </div>
     )
   }
   <div class="card-body">
@@ -133,10 +140,134 @@ const away = !project.caseStudy;
 
 <script>
   /*
-   * The one piece of script on this site, and the reason is that there is no
-   * CSS way to ask where the pointer is. It writes two custom properties and
-   * does nothing else: no state, no classes, no layout reads beyond the card's
-   * own box.
+   * The card scenes: each fallback media panel runs a slow live drawing of
+   * what its project is. One shared requestAnimationFrame loop for all of
+   * them — not one per card — and an IntersectionObserver stops any scene
+   * that is off screen entirely, so the cost is one loop over the cards a
+   * reader can actually see.
+   *
+   * The scene functions are pure (ctx, w, h, t, hot) and live in
+   * src/scripts/sky/scenes.js where the tests can call them with a stub
+   * context. Colour is set here, once per card, from the card's own --c — the
+   * same resolved token the spotlight uses — so the palette still has exactly
+   * one home.
+   */
+  import { SCENES } from '../scripts/sky/scenes.js';
+
+  {
+    const still = matchMedia('(prefers-reduced-motion: reduce)');
+    const canvases = [...document.querySelectorAll<HTMLCanvasElement>('.card-scene')];
+    // Documented neutral, painted only if the token fails to resolve.
+    const FALLBACK = '#8a919c';
+
+    type Item = {
+      canvas: HTMLCanvasElement;
+      ctx: CanvasRenderingContext2D;
+      fn: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number, hot: number) => void;
+      w: number;
+      h: number;
+      colour: string;
+      active: boolean;
+      hot: number;
+    };
+
+    const items: Item[] = [];
+    for (const canvas of canvases) {
+      const fn = SCENES[canvas.dataset.scene as keyof typeof SCENES];
+      const ctx = canvas.getContext('2d');
+      const card = canvas.closest('.card');
+      if (!fn || !ctx || !(card instanceof HTMLElement)) continue;
+      const item: Item = { canvas, ctx, fn, w: 0, h: 0, colour: FALLBACK, active: false, hot: 0 };
+
+      // hot on hover AND focus-within: the keyboard reaches the card through
+      // the name link, and the scene answering only the mouse would be the
+      // tether bug all over again in miniature.
+      card.addEventListener('mouseenter', () => { item.hot = 1; });
+      card.addEventListener('mouseleave', () => { item.hot = card.matches(':focus-within') ? 1 : 0; });
+      card.addEventListener('focusin', () => { item.hot = 1; });
+      card.addEventListener('focusout', () => { item.hot = card.matches(':hover') ? 1 : 0; });
+
+      items.push(item);
+    }
+
+    if (items.length) {
+      const size = (item: Item) => {
+        const box = item.canvas.getBoundingClientRect();
+        item.w = box.width;
+        item.h = box.height;
+        const dpr = Math.min(2, devicePixelRatio || 1);
+        item.canvas.width = Math.round(item.w * dpr);
+        item.canvas.height = Math.round(item.h * dpr);
+        item.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const card = item.canvas.closest('.card');
+        if (card) item.colour = getComputedStyle(card).getPropertyValue('--c').trim() || FALLBACK;
+      };
+
+      const draw = (item: Item, t: number) => {
+        item.ctx.clearRect(0, 0, item.w, item.h);
+        item.ctx.strokeStyle = item.colour;
+        item.ctx.fillStyle = item.colour;
+        item.ctx.lineWidth = 1;
+        item.fn(item.ctx, item.w, item.h, t, item.hot);
+      };
+
+      let raf = 0;
+      const loop = (now: number) => {
+        raf = 0;
+        let any = false;
+        for (const item of items) {
+          if (!item.active) continue;
+          any = true;
+          draw(item, now / 1000);
+        }
+        if (any && !still.matches && !document.hidden) raf = requestAnimationFrame(loop);
+      };
+      const wake = () => {
+        if (!raf && !still.matches && !document.hidden) raf = requestAnimationFrame(loop);
+      };
+
+      // Under reduce a scene is one still, mid-cycle rather than at t=0 so it
+      // shows its subject and not its empty first frame.
+      const settle = () => { for (const item of items) draw(item, 7); };
+
+      const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const item = items.find((i) => i.canvas === entry.target);
+          if (item) item.active = entry.isIntersecting;
+        }
+        if (still.matches) settle();
+        else wake();
+      });
+
+      for (const item of items) { size(item); io.observe(item.canvas); }
+      if (still.matches) settle();
+
+      document.addEventListener('visibilitychange', wake);
+      still.addEventListener('change', () => (still.matches ? settle() : wake()));
+
+      let timer = 0;
+      addEventListener('resize', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          for (const item of items) size(item);
+          if (still.matches) settle(); else wake();
+        }, 150) as unknown as number;
+      });
+
+      // A theme change moves --c with it; recolour without waiting for a frame.
+      new MutationObserver(() => {
+        for (const item of items) size(item);
+        if (still.matches) settle(); else wake();
+      }).observe(document.documentElement, { attributeFilter: ['data-theme'] });
+    }
+  }
+</script>
+
+<script>
+  /*
+   * The spotlight. There is no CSS way to ask where the pointer is, so this
+   * writes two custom properties and does nothing else: no state, no classes,
+   * no layout reads beyond the card's own box.
    *
    * The stylesheet, not this file, decides whether any of it is visible. Every
    * rule it feeds sits behind prefers-reduced-motion, hover and pointer: fine,

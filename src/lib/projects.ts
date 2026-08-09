@@ -73,6 +73,14 @@ export interface Project {
      */
     alt: string;
   };
+  /**
+   * The catalogue star this project is tethered to in the sky, by the star's
+   * id in src/scripts/sky/catalog.js. The mapping lives here, with the
+   * projects, rather than in the sky module: which star belongs to which
+   * project is a fact about the project. Optional — a project without an
+   * anchor simply has no tether, and nothing throws.
+   */
+  anchor?: string;
   /** The repository's default branch. Not every repo calls it main. */
   branch?: string;
   /**
@@ -93,6 +101,8 @@ export const projects: Project[] = [
     tags: ['React', 'TypeScript', 'Canvas 2D', 'KaTeX'],
     accent: 'star',
     status: 'live',
+    // Canopus: the navigation star for centuries. The lodestar.
+    anchor: 'canopus',
   },
   {
     name: 'Vela Sea',
@@ -102,6 +112,8 @@ export const projects: Project[] = [
     tags: ['Python', 'Pygame', 'pytest', 'pygbag'],
     accent: 'sea',
     status: 'playable',
+    // The brightest star in the sails.
+    anchor: 'gamma-velorum',
   },
   {
     name: 'Veritas',
@@ -109,6 +121,8 @@ export const projects: Project[] = [
     href: 'https://github.com/VelaWind/veritas',
     caseStudy: false,
     branch: 'master',
+    // Miaplacidus, in the keel: the part that keeps a ship true.
+    anchor: 'miaplacidus',
     tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
   },
   {
@@ -116,6 +130,8 @@ export const projects: Project[] = [
     blurb: 'A command-line tool that reads a repository and writes the context file an AI agent needs.',
     href: 'https://github.com/VelaWind/anchorfile',
     caseStudy: false,
+    // Naos, in Puppis. The name means "ship".
+    anchor: 'naos',
     tags: ['TypeScript', 'Node', 'commander', 'npm'],
   },
 ];

@@ -18,9 +18,18 @@ interface Props {
    * page and the index are not.
    */
   type?: 'website' | 'article';
+  /**
+   * How much sky this page gets: 1 on the home page, 0.7 on the index, 0.35
+   * behind a case study, where someone is reading two thousand words and the
+   * sky's job is to be almost absent. A prop rather than a body data
+   * attribute because the pages already talk to Base through props, and a
+   * number a stylesheet can consume beats an attribute a stylesheet would
+   * have to enumerate.
+   */
+  sky?: number;
 }
 
-const { title, description, type = 'website' } = Astro.props;
+const { title, description, type = 'website', sky = 1 } = Astro.props;
 
 const site = Astro.site ?? new URL('https://velawind.dev');
 
@@ -135,9 +144,33 @@ const aiDisclosure =
          Set unconditionally, and outside the try, so a storage failure never
          hides a control that still works. */
       document.documentElement.dataset.js = '';
+
+      /*
+       * Arms the arrival sequence, and only here: the CSS that hides the page
+       * pre-reveal is keyed to data-arrive, so the hidden state can only ever
+       * exist when this script has run and motion is allowed. Get this the
+       * right way round — the reveal classes default to VISIBLE — and a
+       * reader with no JavaScript, or a crawler, or a print job, never has
+       * anything to un-hide.
+       *
+       * The failsafe is armed in the same breath, before the sky module has
+       * had any chance to fail: whatever happens to the sequence, at 4s the
+       * page is fully on. A JS error must not be able to make the site
+       * invisible, and this line is that sentence in code.
+       */
+      try {
+        if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+          document.documentElement.dataset.arrive = '';
+          setTimeout(function () {
+            document.documentElement.dataset.arriveGo = '';
+          }, 4000);
+        }
+      } catch (e) {
+        /* matchMedia failing means no hidden state was created at all. */
+      }
     </script>
   </head>
-  <body>
+  <body style={sky === 1 ? undefined : `--sky-intensity: ${sky}`}>
     <a class="skip" href="#main">Skip to content</a>
     <Sky />
     {/*
