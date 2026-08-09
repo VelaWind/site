@@ -40,7 +40,9 @@ const RING_ALPHA = 0.34;
 const NEBULA_ALPHA = 0.03; // what the wave leaves behind, forever
 const LINE_REACH = 250; // px, how close the pointer must be to raise a line
 const LINE_ALPHA = 0.15;
-const NAME_REACH = 28; // px, how close the pointer must be to name a star
+// How close the pointer must be to name a star. 28px was tried first and
+// nobody discovers a name by parking the cursor on a two-pixel dot.
+const NAME_REACH = 56;
 const TETHER_ALPHA = 0.28;
 const DRIFT = { x: 6, y: 4, px: 150, py: 200 }; // px and seconds, whole-sky sine drift
 const PARALLAX = 0.005; // fraction of pointer offset from centre
@@ -50,10 +52,11 @@ const SCROLL_RISE = 0.06; // the sky rises at 6% of scroll distance
  * 18%, and 18% of alphas that top out at 0.36 measured as a black screen in
  * the t=0.3s still — but the same spec says the dim pre-roll sky "matters
  * more than any other number here", and when its numbers and its priority
- * disagreed, the priority won. 0.38 is the floor at which the field reads as
- * a sky on a normal monitor and the ignition sweep still visibly brightens it.
+ * disagreed, the priority won. 0.38 was the first correction and still read
+ * as near-black in the capture; 0.5 is the current call, to be judged on a
+ * real monitor rather than a compressed still.
  */
-const PREROLL_FLOOR = 0.38;
+const PREROLL_FLOOR = 0.5;
 const SESSION_KEY = 'velawind-arrival';
 
 /* The documented neutral: painted only if a token fails to resolve, which
