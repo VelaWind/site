@@ -45,6 +45,15 @@ const TETHER_ALPHA = 0.28;
 const DRIFT = { x: 6, y: 4, px: 150, py: 200 }; // px and seconds, whole-sky sine drift
 const PARALLAX = 0.005; // fraction of pointer offset from centre
 const SCROLL_RISE = 0.06; // the sky rises at 6% of scroll distance
+/*
+ * How much of a field star shows before the wave reaches it. The spec said
+ * 18%, and 18% of alphas that top out at 0.36 measured as a black screen in
+ * the t=0.3s still — but the same spec says the dim pre-roll sky "matters
+ * more than any other number here", and when its numbers and its priority
+ * disagreed, the priority won. 0.38 is the floor at which the field reads as
+ * a sky on a normal monitor and the ignition sweep still visibly brightens it.
+ */
+const PREROLL_FLOOR = 0.38;
 const SESSION_KEY = 'velawind-arrival';
 
 /* The documented neutral: painted only if a token fails to resolve, which
@@ -222,7 +231,7 @@ export function mountSky(canvas) {
     // anything happens, so the sequence is a sunrise rather than a bang.
     ctx.fillStyle = colours.sky;
     for (const f of field) {
-      const lit = 0.18 + 0.82 * ignition(f.ignite, t);
+      const lit = PREROLL_FLOOR + (1 - PREROLL_FLOOR) * ignition(f.ignite, t);
       const twinkle = mode === 'skip' ? 1 : 0.7 + 0.3 * Math.sin(nowMs * f.rate + f.phase);
       ctx.globalAlpha = f.a * colours.skyAlpha * twinkle * lit;
       ctx.beginPath();
