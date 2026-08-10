@@ -159,7 +159,7 @@ What runs, and why each piece exists:
 ## Tests
 
 `npm test` builds the site, serves the built output, drives a real headless
-Chrome over the DevTools Protocol, and tears both down again — 54 tests in
+Chrome over the DevTools Protocol, and tears both down again — 55 tests in
 twelve files. It needs nothing installed that is not already here: Node has a global
 WebSocket and a global fetch, and CDP is JSON over one socket, so the harness
 and runner are about five hundred lines in `test/`. Chrome itself has to exist
@@ -177,7 +177,7 @@ One file per concern, named for what it protects:
 | `works-without-javascript.test.js` | Every link works, no section is invisible, no layout collapses, and no dead control is painted. |
 | `palette.test.js` | Filtering, selection, activation, and that every action has a plain equivalent elsewhere. |
 | `og-card.test.js` | The social card cannot go stale silently: the home lede, the alt on every route, and the text baked into the committed PNG all equal the card line in `src/lib/og-card.js`, and the hashed `og:image` URL and legacy `/og.png` both serve the committed bytes at the declared size. |
-| `sky.test.js` | Canvas geometry, the devicePixelRatio cap, the area-based field-star law, and the ship egg lighting and dimming. |
+| `sky.test.js` | Canvas geometry, the devicePixelRatio cap, the area-based field-star law, the ship egg lighting and dimming, and that a star's hover hot spot sits on its painted pixels — scrolled and at the viewport edge. |
 | `sky-math.test.js` | The projection against the real catalogue, with no browser: the east-is-left RA flip, radius monotonic in magnitude, every link, hull entry and project anchor resolving, the easing, and the arrival-delay clamp. |
 | `scenes.test.js` | The four card scenes as pure functions: hostile boxes and times without throwing, `globalAlpha` handed back, and that each actually paints. |
 | `arrival.test.js` | With scripts disabled the lede is fully visible; under `reduce` no animation loop runs; on a cold load the lede is readable within 2.2s of navigation. |

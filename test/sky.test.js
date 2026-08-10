@@ -9,6 +9,7 @@
  */
 import { test } from 'node:test';
 import { openPage, atLeast, atMost, exactly } from './harness.js';
+import { CONSTELLATIONS, project, skyBox, starRadius } from '../src/scripts/sky/catalog.js';
 
 const GEOMETRY = `(() => {
   const c = document.querySelector('#sky');
@@ -178,4 +179,141 @@ test('the parallax only listens where there is a pointer', async (t) => {
     1,
     `backing-store ratio on a touch device (backing ${geometry.backingWidth}px into a ${geometry.boxWidth}px box)`,
   );
+});
+
+/*
+ * The hover hot spot and the painted star must be the same point.
+ *
+ * The bug this guards: the painter applied drift, parallax and scroll rise as
+ * one canvas translation while the name test undid only the parallax, so the
+ * hot spot sat the drift plus 6% of scroll away from the pixels — measured at
+ * 60px with 1000px scrolled, more than NAME_REACH, so pointing straight at a
+ * star named nothing while empty sky below it did. It survived the full
+ * suite, a contrast audit and two manual passes because nothing ever compared
+ * the two numbers; this compares them, empirically. The painted centre is a
+ * colour-matched pixel centroid; the hot centre is probed by dispatching
+ * pointer moves and reading whether the name's glyph pixels actually painted,
+ * chord midpoints along y then x. requestAnimationFrame is intercepted
+ * before the page loads so every frame is stepped at a chosen virtual time:
+ * the drift is real but frozen, and the measurement is deterministic.
+ */
+const RAF_HOOK = `(() => {
+  const q = [];
+  window.requestAnimationFrame = (cb) => { q.push(cb); return q.length; };
+  window.cancelAnimationFrame = () => {};
+  window.__step = (t) => { const cbs = q.splice(0); for (const cb of cbs) { try { cb(t); } catch (e) {} } return cbs.length; };
+})();`;
+
+const HOT_VS_PAINTED = `async (args) => {
+  const { base, r, token, V, scroll } = args;
+  scrollTo(0, scroll);
+  const canvas = document.querySelector('#sky');
+  const ctx = canvas.getContext('2d');
+  const swatch = document.createElement('canvas').getContext('2d');
+  swatch.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  swatch.fillRect(0, 0, 1, 1);
+  const tokenPx = swatch.getImageData(0, 0, 1, 1).data;
+  const hueOf = (px) => {
+    const max = Math.max(px[0], px[1], px[2]), min = Math.min(px[0], px[1], px[2]);
+    if (max === min) return { h: 0, s: 0 };
+    let h;
+    if (max === px[0]) h = ((px[1] - px[2]) / (max - min)) % 6;
+    else if (max === px[1]) h = (px[2] - px[0]) / (max - min) + 2;
+    else h = (px[0] - px[1]) / (max - min) + 4;
+    return { h: ((h * 60) + 360) % 360, s: (max - min) / max };
+  };
+  const tokenHue = hueOf(tokenPx);
+  const matches = (d, i, minAlpha) => {
+    if (d[i + 3] < minAlpha) return false;
+    const hs = hueOf([d[i], d[i + 1], d[i + 2]]);
+    if (hs.s < 0.15) return false;
+    const dh = Math.abs(hs.h - tokenHue.h);
+    return Math.min(dh, 360 - dh) < 40;
+  };
+  const move = (x, y) => window.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y }));
+  const frame = () => new Promise((res) => { window.__step(V); setTimeout(res, 0); });
+
+  // Painted centre: pointer parked well outside NAME_REACH, centroid of
+  // token-hued pixels. The seed follows the scroll rise only so the search
+  // window contains the star; the centroid itself is read from the pixels.
+  move(base.x, base.y + 150);
+  await frame();
+  const seedY = base.y - scroll * 0.06;
+  const x0 = Math.max(0, Math.round(base.x - 45)), y0 = Math.max(0, Math.round(seedY - 45));
+  const img = ctx.getImageData(x0, y0, 90, 90);
+  let sx = 0, sy = 0, n = 0;
+  for (let yy = 0; yy < 90; yy += 1)
+    for (let xx = 0; xx < 90; xx += 1) {
+      const i = (yy * 90 + xx) * 4;
+      if (matches(img.data, i, 90)) { sx += x0 + xx; sy += y0 + yy; n += 1; }
+    }
+  if (n < 2) return { error: 'no painted pixels found near (' + base.x.toFixed(0) + ', ' + seedY.toFixed(0) + ')' };
+  const painted = { x: sx / n, y: sy / n };
+
+  // The name is on when glyph-strength token pixels sit in the label box
+  // up-right of the dot: alpha 140 excludes the halo (<=64) and lines (<=77).
+  const labelOn = () => {
+    const lx0 = Math.max(0, Math.round(painted.x + r + 3)), ly0 = Math.max(0, Math.round(painted.y - r - 16));
+    const lx1 = Math.min(canvas.width, Math.round(painted.x + r + 78)), ly1 = Math.min(canvas.height, Math.round(painted.y - r + 3));
+    if (lx1 <= lx0 || ly1 <= ly0) return false;
+    const roi = ctx.getImageData(lx0, ly0, lx1 - lx0, ly1 - ly0);
+    let count = 0;
+    for (let i = 0; i < roi.data.length; i += 4) if (matches(roi.data, i, 140)) count += 1;
+    return count >= 10;
+  };
+  const chord = async (fixed, axis) => {
+    const hits = [];
+    for (let o = -80; o <= 80; o += 2) {
+      if (axis === 'x') move(painted.x + o, fixed); else move(fixed, painted.y + o);
+      await frame();
+      if (labelOn()) hits.push(o);
+    }
+    return hits.length ? (hits[0] + hits[hits.length - 1]) / 2 : null;
+  };
+
+  // y first: the vertical line through the painted x passes within drift-x of
+  // the hot centre whatever the y error is, so a broken y offset is measured
+  // rather than pushing the whole disc off the scan row.
+  const cy = await chord(painted.x, 'y');
+  if (cy === null) return { painted, error: 'the name never appeared on the y scan through the painted column' };
+  const cx = await chord(painted.y + cy, 'x');
+  if (cx === null) return { painted, error: 'the name never appeared on the x scan' };
+  return { painted, hot: { x: painted.x + cx, y: painted.y + cy } };
+}`;
+
+test('the name hot spot sits on the painted star, scrolled and at the viewport edge', async (t) => {
+  const page = await openPage();
+  t.after(() => page.close());
+
+  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: RAF_HOOK });
+  await page.emulate({ width: 1440, height: 900 });
+  await page.goto('/', 1500);
+
+  const box = skyBox(1440, 900);
+  const target = (id) => {
+    for (const c of CONSTELLATIONS) {
+      const s = c.stars.find((star) => star.id === id);
+      if (s) return { name: s.name, base: project(s.ra, s.dec, box), r: starRadius(s.m), token: c.token };
+    }
+    throw new Error(`no catalogue star ${id}`);
+  };
+
+  // V freezes the drift near its full amplitude, so the drift half of the old
+  // bug is under test even in the unscrolled condition.
+  const V = 9_037_500;
+  const conditions = [
+    { ...target('suhail'), scroll: 300, what: 'Suhail with the page scrolled 300px' },
+    { ...target('canopus'), scroll: 0, what: 'Canopus at the right viewport edge' },
+  ];
+
+  for (const cond of conditions) {
+    const result = await page.evaluate(
+      `(${HOT_VS_PAINTED})(${JSON.stringify({ base: cond.base, r: cond.r, token: cond.token, V, scroll: cond.scroll })})`,
+    );
+    exactly(result.error ?? null, null, `measuring ${cond.what} (painted ${JSON.stringify(result.painted ?? 'not found')})`);
+    const dx = result.hot.x - result.painted.x;
+    const dy = result.hot.y - result.painted.y;
+    atMost(Math.abs(dx), 2, `x gap between the hover hot spot and the painted star for ${cond.what} — they must be the same point; if this fails, some consumer stopped using screenOf() in sky.js`, 'px');
+    atMost(Math.abs(dy), 2, `y gap between the hover hot spot and the painted star for ${cond.what} — they must be the same point; if this fails, some consumer stopped using screenOf() in sky.js`, 'px');
+  }
 });

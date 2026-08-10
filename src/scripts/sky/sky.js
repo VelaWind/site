@@ -218,6 +218,27 @@ export function mountSky(canvas) {
 
   const starOf = (cid, index) => stars.find((s) => s.cid === cid && s.index === index);
 
+  /*
+   * Where a projected point sits on screen right now — THE single answer.
+   *
+   * It used to be computed independently four times: the painter translated
+   * the whole canvas, the name test and the line test undid the parallax by
+   * hand but knew nothing of the drift or the scroll rise, and the tether
+   * summed everything itself (the one copy that happened to be right). So
+   * the hit tests sat 6% of scroll plus the drift away from the pixels —
+   * measured at (-0.5, -60.5)px at 1000px of scroll, which is more than
+   * NAME_REACH, so pointing straight at a star named nothing while a patch
+   * of empty sky below it did.
+   *
+   * `shift` is written exactly once per frame, at the top of draw(), and
+   * every consumer goes through screenOf: the painter, the name proximity
+   * test, the line proximity test, the tether endpoint. Do not compute a
+   * star's screen position anywhere else — a second copy with a correction
+   * in it is the same bug wearing a hat.
+   */
+  let shift = { x: 0, y: 0 };
+  const screenOf = (p) => ({ x: p.x + shift.x, y: p.y + shift.y });
+
   const draw = (nowMs) => {
     const started = performance.now();
     const t = (nowMs - t0) / 1000;
@@ -230,19 +251,26 @@ export function mountSky(canvas) {
     /*
      * The whole sky moves together: a slow sine drift below the threshold of
      * conscious attention, a whisper of pointer parallax, and a rise at 6% of
-     * scroll so the sky and the page are not welded together. All applied as
-     * one translation rather than per star.
+     * scroll so the sky and the page are not welded together. The sum is
+     * written into `shift` — once, here — and everything positioned on the
+     * sky goes through screenOf(), painter and hit tests alike.
      */
     const driftX = mode === 'skip' ? 0 : DRIFT.x * Math.sin((2 * Math.PI * t) / DRIFT.px);
     const driftY = mode === 'skip' ? 0 : DRIFT.y * Math.sin((2 * Math.PI * t) / DRIFT.py);
     const parX = pointer ? (pointer.x - w / 2) * PARALLAX : 0;
     const parY = pointer ? (pointer.y - h / 2) * PARALLAX : 0;
     const rise = scrollY * SCROLL_RISE;
-    ctx.save();
-    ctx.translate(driftX + parX, driftY + parY - rise);
+    shift = { x: driftX + parX, y: driftY + parY - rise };
 
-    // The depth field: present from the first frame at 18% — a dim sky before
-    // anything happens, so the sequence is a sunrise rather than a bang.
+    /*
+     * The depth field is the one layer still drawn under a canvas
+     * translation: it adds per-star depth parallax on top of the shared
+     * shift, and it has no name, line or tether that could disagree with it.
+     * Present from the first frame at the pre-roll floor — a dim sky before
+     * anything happens, so the sequence is a sunrise rather than a bang.
+     */
+    ctx.save();
+    ctx.translate(shift.x, shift.y);
     ctx.fillStyle = colours.sky;
     for (const f of field) {
       const lit = PREROLL_FLOOR + (1 - PREROLL_FLOOR) * ignition(f.ignite, t);
@@ -252,6 +280,7 @@ export function mountSky(canvas) {
       ctx.arc(f.fx * w + parX * f.z, f.fy * h + parY * f.z, f.r, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
 
     // Constellation lines: invisible at rest, raised only near the pointer —
     // or all of them, hull included, when the egg has lit the ship.
@@ -262,17 +291,19 @@ export function mountSky(canvas) {
         const s1 = starOf(c.id, a);
         const s2 = starOf(c.id, b);
         if (!s1 || !s2) continue;
+        const p1 = screenOf(s1);
+        const p2 = screenOf(s2);
         let alpha = 0;
         if (velaLit) alpha = 0.3;
         else if (pointer) {
-          const d = distToSegment(pointer.x - parX, pointer.y - parY, s1.x, s1.y, s2.x, s2.y);
+          const d = distToSegment(pointer.x, pointer.y, p1.x, p1.y, p2.x, p2.y);
           if (d < LINE_REACH) alpha = LINE_ALPHA * (1 - d / LINE_REACH);
         }
         if (alpha <= 0) continue;
         ctx.globalAlpha = alpha * Math.min(ignition(s1.ignite, t), ignition(s2.ignite, t));
         ctx.beginPath();
-        ctx.moveTo(s1.x, s1.y);
-        ctx.lineTo(s2.x, s2.y);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
         ctx.stroke();
       }
     }
@@ -284,8 +315,9 @@ export function mountSky(canvas) {
       HULL.forEach(([cid, index], i) => {
         const s = starOf(cid, index);
         if (!s) return;
-        if (i === 0) ctx.moveTo(s.x, s.y);
-        else ctx.lineTo(s.x, s.y);
+        const p = screenOf(s);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
       });
       ctx.stroke();
       ctx.globalAlpha = 0.55;
@@ -293,8 +325,29 @@ export function mountSky(canvas) {
       for (const c of CONSTELLATIONS) {
         const anchor = starOf(c.id, 0);
         if (!anchor) continue;
+        const p = screenOf(anchor);
         ctx.fillStyle = colours[c.token];
-        ctx.fillText(c.label, anchor.x + 8, anchor.y - 8);
+        ctx.fillText(c.label, p.x + 8, p.y - 8);
+      }
+    }
+
+    /*
+     * Which star the pointer names: the nearest in range, not every star in
+     * range. Markeb and Aspidiske sit 86px apart at 1440x900 — closer than
+     * twice NAME_REACH — so "every star within reach" painted both names at
+     * once between them, and which sat on top was decided by loop order.
+     * One pointer, one name, the nearer star; the reach itself stays 56.
+     */
+    let named = null;
+    if (pointer) {
+      let best = NAME_REACH;
+      for (const s of stars) {
+        const p = screenOf(s);
+        const d = Math.hypot(pointer.x - p.x, pointer.y - p.y);
+        if (d < best) {
+          best = d;
+          named = s;
+        }
       }
     }
 
@@ -305,47 +358,48 @@ export function mountSky(canvas) {
       const a = ignition(s.ignite, t);
       if (a <= 0) continue;
       const hot = tether && tether.star.id === s.id;
+      const p = screenOf(s);
       ctx.fillStyle = colours[s.token];
       if (s.m < 1 || hot) {
         // Canopus must visibly be the brightest thing up there; a bare 2.6px
         // dot is not visibly anything, so the brightest stars carry a halo.
-        const halo = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 5);
+        const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, s.r * 5);
         halo.addColorStop(0, colours[s.token]);
         halo.addColorStop(1, 'transparent');
         ctx.globalAlpha = 0.25 * a;
         ctx.fillStyle = halo;
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r * 5, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, s.r * 5, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = colours[s.token];
       }
       ctx.globalAlpha = (hot ? 1 : 0.85) * a;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, hot ? s.r * 1.4 : s.r, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, hot ? s.r * 1.4 : s.r, 0, Math.PI * 2);
       ctx.fill();
 
-      const near =
-        pointer && Math.hypot(pointer.x - parX - s.x, pointer.y - parY - s.y) < NAME_REACH;
-      if ((near || hot) && a > 0.5) {
+      if ((s === named || hot) && a > 0.5) {
         ctx.globalAlpha = 0.8 * a;
         ctx.font = font;
-        ctx.fillText(s.name, s.x + s.r + 5, s.y - s.r - 3);
+        ctx.fillText(s.name, p.x + s.r + 5, p.y - s.r - 3);
       }
     }
 
     // The nebula the supernova left behind. It eases up as the wave passes
     // and then sits at 0.03 forever: the quietest thing on the page, and the
-    // only one that is literally the site's name.
+    // only one that is literally the site's name. It rides the sky, so its
+    // centre goes through screenOf like every star does.
+    const o = screenOf(origin);
     const nebA = NEBULA_ALPHA * (arrived ? 1 : ignition(m.waveStart, t));
     if (nebA > 0.001) {
       const nr = Math.min(w, h) * 0.3;
-      const neb = ctx.createRadialGradient(origin.x, origin.y, 0, origin.x, origin.y, nr);
+      const neb = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, nr);
       neb.addColorStop(0, colours['--star']);
       neb.addColorStop(1, 'transparent');
       ctx.globalAlpha = nebA;
       ctx.fillStyle = neb;
       ctx.beginPath();
-      ctx.arc(origin.x, origin.y, nr, 0, Math.PI * 2);
+      ctx.arc(o.x, o.y, nr, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -356,13 +410,13 @@ export function mountSky(canvas) {
         // Fades back out as the wave carries the energy away.
         const decay = Math.max(0, 1 - Math.max(0, t - (m.preroll + m.bloom)) / m.wave);
         const br = BLOOM_RADIUS * easeOutCubic(bloomP);
-        const bloom = ctx.createRadialGradient(origin.x, origin.y, 0, origin.x, origin.y, Math.max(1, br));
+        const bloom = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, Math.max(1, br));
         bloom.addColorStop(0, colours['--star']);
         bloom.addColorStop(1, 'transparent');
         ctx.globalAlpha = BLOOM_ALPHA * easeOutCubic(bloomP) * decay;
         ctx.fillStyle = bloom;
         ctx.beginPath();
-        ctx.arc(origin.x, origin.y, Math.max(1, br), 0, Math.PI * 2);
+        ctx.arc(o.x, o.y, Math.max(1, br), 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -374,28 +428,29 @@ export function mountSky(canvas) {
         ctx.globalAlpha = (RING_ALPHA / 3) * (1 - waveP);
         ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.arc(origin.x, origin.y, Math.max(1, r * 0.92), 0, Math.PI * 2);
+        ctx.arc(o.x, o.y, Math.max(1, r * 0.92), 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = RING_ALPHA * (1 - waveP);
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(origin.x, origin.y, Math.max(1, r), 0, Math.PI * 2);
+        ctx.arc(o.x, o.y, Math.max(1, r), 0, Math.PI * 2);
         ctx.stroke();
       }
     }
 
-    ctx.restore();
-
-    // The tether: drawn in viewport space, because the card is a DOM box and
-    // the curve has to end where the card actually is right now.
+    // The tether: the card end is a DOM box read fresh each frame; the star
+    // end is screenOf, the same answer the painter and hit tests use. It was
+    // the one place that summed drift, parallax and rise correctly by hand —
+    // that hand-written sum is what everything else now shares.
     if (tether) {
       const box = tether.card.getBoundingClientRect();
       const sx = box.left + box.width / 2;
       const sy = box.top;
       const star = stars.find((s) => s.id === tether.star.id);
       if (star && sy > 0) {
-        const tx = star.x + driftX + parX;
-        const ty = star.y + driftY + parY - rise;
+        const p = screenOf(star);
+        const tx = p.x;
+        const ty = p.y;
         ctx.strokeStyle = colours[star.token];
         ctx.globalAlpha = TETHER_ALPHA;
         ctx.lineWidth = 1;
