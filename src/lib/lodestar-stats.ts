@@ -42,8 +42,8 @@ interface Claim extends Stat {
 }
 
 const CLAIMS: Claim[] = [
-  { figure: '324', label: 'tests in Lodestar', proof: /`npm test` is (\d+) Vitest tests/ },
-  { figure: '33', label: 'physics sanity checks', proof: /the (\d+) physics sanity checks as assertions/ },
+  { figure: '1178', label: 'tests in Lodestar', proof: /`npm test` is (\d+) Vitest tests/ },
+  { figure: '205', label: 'physics sanity checks', proof: /the (\d+) physics sanity checks as assertions/ },
   { figure: '7', label: 'layers per topic', proof: /Every topic is one page of ([a-z]+|\d+) layers/ },
 ];
 
