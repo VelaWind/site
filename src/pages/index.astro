@@ -88,7 +88,7 @@ const stats = [
     <section class="section reveal" id="work" aria-labelledby="work-title">
       <h2 class="section-title" id="work-title">Selected work</h2>
       <p class="section-note">
-        Two have case studies. The other two link to their source.
+        Each has a case study.
       </p>
       <ul class="project-grid">
         {projects.map((project) => <ProjectCard project={project} level={3} />)}
@@ -122,6 +122,12 @@ const stats = [
         Sea keeps its simulation layer free of the drawing layer so the whole
         game can be played by a bot with no window open. Both are the same
         idea: make the thing checkable, then check it.
+      </p>
+      <p>
+        The projects are built with an AI coding tool, Claude Code, and the
+        decisions stay with the author. What the AI drafts is held to tests and
+        to outside references, the constants, rules and sources each project
+        answers to, before anything ships.
       </p>
     </section>
 

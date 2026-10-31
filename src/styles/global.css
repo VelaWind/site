@@ -630,6 +630,22 @@ a:focus-visible,
   z-index: 2;
 }
 
+/*
+ * Below 84rem the content column reaches the corner the controls sit in, and a
+ * fixed pair of buttons then sits on top of whatever line scrolls under it:
+ * the hero, the stat strip, a card's description, a case study's paragraphs.
+ * So at those widths the controls stay in the corner of the page instead of
+ * the corner of the screen, and scroll away with the top of it. The top padding
+ * of .page and .wrap (--space-xl, 54px) already clears their bottom edge
+ * (--space-s + --control-size, 50px), so nothing sits under them at rest.
+ * test/controls-clear-text.test.js holds this at 375, 770 and 1280px.
+ */
+@media (max-width: 84rem) {
+  .controls {
+    position: absolute;
+  }
+}
+
 .theme-toggle {
   display: none;
 }
@@ -820,7 +836,9 @@ code {
   background: var(--code-bg);
   padding: 0.1em 0.35em;
   border-radius: 3px;
-  overflow-wrap: break-word;
+  /* anywhere, not break-word: a long path in running text has to be allowed to
+     break inside itself, or at 375px it pushes past the column edge. */
+  overflow-wrap: anywhere;
 }
 
 pre {
