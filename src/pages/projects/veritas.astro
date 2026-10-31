@@ -1,0 +1,125 @@
+---
+/**
+ * The Veritas case study.
+ *
+ * Same split as the others: the framing above the provenance note is written
+ * here for a portfolio reader; everything below it is fetched from the README
+ * on the repository's default branch, which is master, at build time. If the
+ * fetch fails or a marker has gone, `fetchCaseStudySection` throws and this
+ * page fails to build; see src/lib/case-study-readme.ts.
+ */
+import Base from '../../layouts/Base.astro';
+import CaseShot from '../../components/CaseShot.astro';
+import { fetchCaseStudySection } from '../../lib/case-study-readme';
+import { projectByHref } from '../../lib/projects';
+
+const { html, sourceUrl } = await fetchCaseStudySection({
+  owner: 'VelaWind',
+  repo: 'veritas',
+  branch: projectByHref('/projects/veritas')?.branch,
+  expectedHeading: '# Veritas',
+});
+
+const repoUrl = 'https://github.com/VelaWind/veritas';
+---
+
+<Base
+  sky={0.35}
+  title="Veritas · VelaWind"
+  type="article"
+  description="A catalogue of knowledge claims where Postgres enforces the rules, not the application."
+>
+  <main class="page" id="main">
+    <p class="eyebrow"><a href="/">VelaWind</a> · <a href="/projects">Projects</a></p>
+
+    <h1>Veritas</h1>
+    <p class="lede">
+      A catalogue of knowledge claims where Postgres enforces the rules, not the
+      application.
+      <br />
+      <a href={repoUrl}>Source</a>
+    </p>
+
+    <CaseShot href="/projects/veritas" />
+
+    <h2>The problem</h2>
+    <p>
+      A catalogue of claims is only worth reading if its rules hold. In Veritas
+      every hypothesis has an epistemic status and a confidence score, and the
+      two have to agree: a speculation cannot sit at 90. A confidence change has
+      to carry a reason. The history of changes cannot be rewritten afterwards.
+    </p>
+    <p>
+      Those rules have many writers to survive. The admin pages, the API
+      routes, contributors proposing changes, maintenance scripts holding the
+      service key, and, later, AI research agents that read sources and propose
+      hypotheses and evidence. Each writer is a place where a rule can be
+      skipped.
+    </p>
+
+    <h2>Why the obvious approach was not used</h2>
+    <p>
+      The obvious place for the rules is the application: validate every write
+      in the route that handles it. That holds only for writers that go through
+      those routes, and it holds only as long as every new route remembers to
+      do it. A script with the service key, a route added next year, or an
+      agent runner with a bug all write without passing that check.
+    </p>
+    <p>
+      So the rules live in PostgreSQL. A CHECK constraint binds status to
+      confidence. A trigger refuses a confidence change without a rationale and
+      writes the history row itself. The history tables have no update or delete
+      policy, so under row-level security no application role can alter them.
+      The application still validates, but only to give a readable error
+      message; the database is what refuses.
+    </p>
+    <p>
+      The agents were added later and were given no new way to write. They
+      propose into the same queue a human contributor uses, an admin approves
+      every proposal, and a trigger enforces each agent's quota and domain scope
+      even if the runner skips its own limits. The worst a prompt injection in a
+      source can produce is a pending proposal that a reviewer rejects. The
+      dashboard follows the same idea: its figures come from a database view
+      read under the viewer's own row-level security, so they cannot go stale.
+    </p>
+
+    <h2>One trade-off</h2>
+    <p>
+      The query layer does not use generated database types. It casts query
+      results to hand-written types in 13 places, so a select whose shape stops
+      matching those types still compiles. That is deliberate: regenerating the
+      types can never break the build. The cost is that this class of mismatch
+      is found at runtime, by the smoke run and the verification scripts, not by
+      the compiler.
+    </p>
+
+    <h2>What should change</h2>
+    <p>
+      The worst failure in the project's history was not a crash. The deployed
+      site served every page with HTTP 200 for about two months while its
+      database was unreachable: a placeholder database URL ended up in the
+      production build, every query failed, and every page rendered a normal
+      looking empty state. The project's decision log records it as the third
+      instance of one shape, a wrong value producing a plausible success. A
+      production build now refuses the placeholder, a failed query raises once a
+      real database is configured, and a smoke run checks the deployed site
+      every 30 minutes.
+    </p>
+    <p>
+      What remains: the scripts that exercise the database end to end write to
+      it, and there is one database, so they run by hand rather than in CI. Unit
+      tests cover three modules, with no component or browser tests. The
+      research graph cannot be navigated by keyboard.
+    </p>
+
+    <p class="provenance">
+      The rest of this page is fetched from
+      the <a href={sourceUrl}>Veritas README</a> at build time and rendered here,
+      so it is maintained in the repository and not in this site. It covers the
+      architecture, how it is verified and, under "Known limits", what does not
+      work.
+    </p>
+
+    <div class="readme" set:html={html} />
+  </main>
+</Base>

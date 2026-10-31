@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 export const BASE = process.env.TEST_BASE_URL ?? 'http://localhost:4380';
 const CDP = process.env.TEST_CDP_URL ?? 'http://127.0.0.1:9333';
 
-export const PAGES = ['/', '/projects', '/projects/lodestar', '/projects/vela-sea', '/projects/anchorfile'];
+export const PAGES = ['/', '/projects', '/projects/lodestar', '/projects/vela-sea', '/projects/anchorfile', '/projects/veritas'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

@@ -139,10 +139,19 @@ export const projects: Project[] = [
   {
     name: 'Veritas',
     blurb: 'A catalogue of knowledge claims where Postgres enforces the rules, not the application.',
-    href: 'https://github.com/VelaWind/veritas',
-    caseStudy: false,
+    href: '/projects/veritas',
+    caseStudy: true,
     branch: 'master',
     tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
+    screenshot: {
+      file: 'veritas.png',
+      alt: 'A dark dashboard of seeded data. Five tiles read 15 hypotheses, '
+        + '31 evidence entries, 15 open questions, 5 open contradictions and 3 '
+        + 'simulation runs. Below them a bar chart of hypotheses per confidence '
+        + 'band shows 1 in 0 to 20, 10 in 21 to 40, 4 in 41 to 60 and none '
+        + 'above 60, beside a horizontal bar chart of hypotheses per domain '
+        + 'across ten domains.',
+    },
     // Miaplacidus, in the keel: the part that keeps a ship true.
     anchor: 'miaplacidus',
   },
