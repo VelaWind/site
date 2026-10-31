@@ -21,6 +21,7 @@ const { html, sourceUrl } = await fetchCaseStudySection({
 });
 
 const repoUrl = 'https://github.com/VelaWind/veritas';
+const liveUrl = 'https://veritas-delta-pearl.vercel.app';
 ---
 
 <Base
@@ -37,7 +38,7 @@ const repoUrl = 'https://github.com/VelaWind/veritas';
       A catalogue of knowledge claims where Postgres enforces the rules, not the
       application.
       <br />
-      <a href={repoUrl}>Source</a>
+      <a href={liveUrl}>Live site</a> · <a href={repoUrl}>Source</a>
     </p>
 
     <CaseShot href="/projects/veritas" />

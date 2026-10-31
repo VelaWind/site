@@ -143,6 +143,7 @@ export const projects: Project[] = [
     caseStudy: true,
     branch: 'master',
     tags: ['Next.js', 'PostgreSQL', 'Supabase', 'TypeScript'],
+    status: 'live',
     screenshot: {
       file: 'veritas.png',
       alt: 'A dark dashboard of seeded data. Five tiles read 15 hypotheses, '
