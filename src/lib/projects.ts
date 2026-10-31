@@ -149,9 +149,17 @@ export const projects: Project[] = [
   {
     name: 'Anchorfile',
     blurb: 'A command-line tool that reads a repository and writes the context file an AI agent needs.',
-    href: 'https://github.com/VelaWind/anchorfile',
-    caseStudy: false,
-    tags: ['TypeScript', 'Node', 'commander', 'npm'],
+    href: '/projects/anchorfile',
+    caseStudy: true,
+    tags: ['TypeScript', 'Node', 'Vitest', 'npm'],
+    screenshot: {
+      file: 'anchorfile.png',
+      alt: 'A terminal on the left runs npx anchorfile init --verbose in a '
+        + 'small TypeScript project and logs each detection: React, Next.js '
+        + 'and Prisma, npm, Vitest, ESLint, the top-level folders and key '
+        + 'files. On the right is the start of the CLAUDE.md it wrote: the '
+        + 'project overview and the tech stack, with Docker and CI marked yes.',
+    },
     // Naos, in Puppis. The name means "ship".
     anchor: 'naos',
   },
