@@ -178,6 +178,13 @@ async function main() {
   start(chrome, [
     '--headless=new',
     '--disable-gpu',
+    /*
+     * A headless browser on a machine with no mouse (a CI runner, a container)
+     * reports no fine pointer, so the sky never attaches its pointermove
+     * listener and the hover tests measure nothing. Declare a mouse, as every
+     * desktop reader has: 4 is blink's PointerType fine, 8 HoverType hover.
+     */
+    '--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=8,availableHoverTypes=8',
     '--no-first-run',
     '--no-default-browser-check',
     `--remote-debugging-port=${CDP_PORT}`,

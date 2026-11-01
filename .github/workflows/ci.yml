@@ -1,0 +1,28 @@
+name: CI
+
+# npm test is the whole check: astro check (types) and the build, which fetches
+# every case-study README and verifies the home-page figures against Lodestar's,
+# then the browser suite against the built site in headless Chrome.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: check · build · browser suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Test
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm test
