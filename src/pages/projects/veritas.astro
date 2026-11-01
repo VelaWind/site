@@ -107,10 +107,21 @@ const liveUrl = 'https://veritas-delta-pearl.vercel.app';
       every 30 minutes.
     </p>
     <p>
+      A dependency upgrade found the same shape again. Moving the validation
+      library to its next major version produced no type error, but the new
+      version fills in defaults for fields a request leaves out, so an edit to a
+      hypothesis title alone would have wiped its assumptions and open
+      questions, and an empty note edit would have unpublished the note. Edits
+      now apply defaults only to fields the caller sent. Every schema was run on
+      the same 7,415 inputs under both versions with no difference in what is
+      accepted or produced, and a unit test fails if the old behaviour returns.
+    </p>
+    <p>
       What remains: the scripts that exercise the database end to end write to
       it, and there is one database, so they run by hand rather than in CI. Unit
-      tests cover three modules, with no component or browser tests. The
-      research graph cannot be navigated by keyboard.
+      tests cover four modules, with no component or browser tests. The
+      research graph can now be driven by keyboard, but it was tested in
+      Chromium only, not with a screen reader.
     </p>
 
     <p class="provenance">
