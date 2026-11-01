@@ -65,8 +65,8 @@ const npmUrl = 'https://www.npmjs.com/package/anchorfile';
     </p>
     <p>
       So Anchorfile reads only what is on disk: <code>package.json</code>,
-      lockfiles, config files, <code>requirements.txt</code> and the top-level
-      tree. Every line it writes comes from a file a reader can open, and the
+      lockfiles, config files, <code>requirements.txt</code>,
+      <code>pyproject.toml</code> and the file tree. Every line it writes comes from a file a reader can open, and the
       same repository always produces the same output. The judgement calls a
       file tree cannot answer, what to avoid and which files matter most, are
       left as marked sections for a person to fill in.
@@ -74,10 +74,11 @@ const npmUrl = 'https://www.npmjs.com/package/anchorfile';
 
     <h2>One trade-off</h2>
     <p>
-      Detection is deliberately shallow. Frameworks are matched by exact
-      package name, language by counting extensions in one directory, and an
-      ESLint flat config, the default since ESLint 9, is not recognised. The
-      cost is that Anchorfile misses things a model would have guessed. The
+      Detection is deliberately literal. Frameworks are matched by exact
+      package name, a <code>tsconfig.json</code> makes a project TypeScript
+      without counting anything, and the walk that counts file extensions stops
+      at a fixed depth and file count so a very large repository stays fast.
+      The cost is that Anchorfile misses things a model would have guessed. The
       reason to accept it is that a miss is visible: the file says "None
       detected" and a person can correct it, while a confident wrong guess looks
       exactly like a right one.
@@ -87,19 +88,27 @@ const npmUrl = 'https://www.npmjs.com/package/anchorfile';
     <p>
       The package was on npm before it had a single test. The suite came later:
       fixture repositories for each kind of project the README says it reads,
-      the two documented limits pinned so they change only on purpose, a
-      snapshot of the emitted file, and the built CLI run end to end. Writing it
-      found one defect straight away: top-level folders were listed in whatever
-      order the filesystem returned them, so the same repository could produce
-      two different files on two machines. For a tool whose whole claim is that
-      its output follows from the files, that is the wrong defect to have
-      shipped.
+      the documented limits pinned so they change only on purpose, a snapshot of
+      the emitted file, and the built CLI run end to end. Writing it found one
+      defect straight away: top-level folders were listed in whatever order the
+      filesystem returned them, so the same repository could produce two
+      different files on two machines. For a tool whose whole claim is that its
+      output follows from the files, that is the wrong defect to have shipped.
     </p>
     <p>
-      The limits above remain. Python dependencies are read
-      from <code>requirements.txt</code> only, not <code>pyproject.toml</code>,
-      and flat ESLint config is still unrecognised. Both are tested as limits,
-      not fixed.
+      The suite then made it safe to remove three of the limits it had pinned.
+      Dependencies are now read from <code>pyproject.toml</code> as well
+      as <code>requirements.txt</code>, ESLint flat config is recognised, and
+      the language is counted across the tree instead of one folder. Turning
+      those tests around found a second defect: <code>.ts</code>
+      and <code>.tsx</code> files were counted as two languages, so a project
+      split between them could lose to fewer JavaScript files.
+    </p>
+    <p>
+      What remains: the <code>pyproject.toml</code> reader is a small one and
+      skips Poetry dependency groups, a Poetry project is still reported as
+      using pip, and Python dependencies are not yet listed in the generated
+      file's dependency section.
     </p>
 
     <p class="provenance">
