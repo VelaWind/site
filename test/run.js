@@ -184,6 +184,7 @@ async function main() {
      * listener and the hover tests measure nothing. Declare a mouse, as every
      * desktop reader has: 4 is blink's PointerType fine, 8 HoverType hover.
      */
+    '--hide-scrollbars',
     '--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=8,availableHoverTypes=8',
     '--no-first-run',
     '--no-default-browser-check',
