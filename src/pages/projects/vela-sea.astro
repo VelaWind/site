@@ -94,7 +94,7 @@ const downloadUrl = 'https://github.com/VelaWind/vela-sea/releases/latest/downlo
     <h2>One trade-off</h2>
     <p>
       Collision avoidance does not run inside the fixed timestep. It runs once
-      per rendered frame, at <code>main.py</code> lines 2784 to 2795. Inside the
+      per rendered frame, at <code>main.py</code> lines 2768 to 2779. Inside the
       simulation loop it ran up to 375 times per frame, and that O(n²) pair scan
       repeated hundreds of times per frame was the crash at 3× speed, so it was
       lifted out of the loop.
@@ -128,23 +128,33 @@ const downloadUrl = 'https://github.com/VelaWind/vela-sea/releases/latest/downlo
     <p>
       Moving the code showed that the copied chart function was never called by
       the game, so that check had been testing a copy of dead code, and the
-      course-over-ground vector it exists to draw is not drawn. One duplicate is
+      course-over-ground vector it exists to draw was never on the chart. It is
+      drawn now, for the player and the followed vessel, whenever drift
+      exceeds half a degree. One duplicate is
       left on purpose: the course-over-ground maths
       and <code>Vessel.move()</code> still compute the same velocity separately,
       and the verification script now runs a real <code>move()</code> step and
       fails if the two disagree.
     </p>
     <p>
-      Then the two structural ones. <code>main.py</code> is 3,586 lines, and the
+      The structural one that remains: <code>main.py</code> is 3,570 lines, and the
       search-and-rescue dispatch and the AI decision helpers are in it. The
       layering rule holds by its letter, because <code>main.py</code> was never
       in its scope, but that logic is simulation and it sits on the wrong side of
       the line the rule was drawn to protect.
-      And <code>engine/rules.py</code> defines a rules engine that is exported
-      from <code>engine/__init__.py</code> and never instantiated anywhere, while
-      the zone rules the game actually enforces, the speed caps and the fines,
-      sit inline in the game loop. Someone looking for the rules finds a module
-      named for them that does nothing.
+    </p>
+    <p>
+      Two others are fixed. <code>engine/rules.py</code> used to be a rules
+      engine nothing instantiated, while the speed caps and fines sat inline in
+      the game loop; the zone rules now live in it, with only their side
+      effects (sound, log, money) left in <code>main.py</code>, and a seeded run
+      produces identical fines and caps before and after. And a rescue used to
+      count as complete when the rescuer reached the first waypoint of its route,
+      so 145 of 543 rescues in a 14-day diagnostic completed with the rescuer
+      more than 3.9 nautical miles from the casualty, one of them 58.6 miles
+      away. Completion now requires the rescuer to be in range. The cost is
+      visible in the same diagnostic: rescuers sail their whole route, so port
+      arrivals fall from 686 to 358. The busier sea was partly the bug.
     </p>
 
     <p class="provenance">
