@@ -184,6 +184,16 @@ async function main() {
      * listener and the hover tests measure nothing. Declare a mouse, as every
      * desktop reader has: 4 is blink's PointerType fine, 8 HoverType hover.
      */
+    /*
+     * Hidden scrollbars, as overlay-scrollbar systems have. With a classic
+     * scrollbar (the Linux CI runner) the canvas ends about 15px earlier, and
+     * the hover test's one star placed at the right viewport edge, Canopus,
+     * measured a 19px gap between its hover spot and its painted centre. The
+     * likely cause is the measurement, not the page: Canopus carries a halo,
+     * the halo is clipped by the nearer edge, and the test finds the painted
+     * centre as the centroid of the halo's pixels, which a clip pulls inward.
+     * Not proven; this flag keeps the suite deterministic across runners.
+     */
     '--hide-scrollbars',
     '--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=8,availableHoverTypes=8',
     '--no-first-run',
