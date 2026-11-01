@@ -117,11 +117,20 @@ const liveUrl = 'https://veritas-delta-pearl.vercel.app';
       accepted or produced, and a unit test fails if the old behaviour returns.
     </p>
     <p>
-      What remains: the scripts that exercise the database end to end write to
-      it, and there is one database, so they run by hand rather than in CI. Unit
-      tests cover four modules, with no component or browser tests. The
-      research graph can now be driven by keyboard, but it was tested in
-      Chromium only, not with a screen reader.
+      The scripts that exercise the database end to end used to run by hand,
+      because they write to it and there was one database. CI now starts a
+      throwaway Postgres inside the runner, applies every migration and the
+      seed, and runs them there on every pull request, with a guard that stops
+      the job unless every target is on the runner itself. The search rate
+      limit moved into the database the same way: one atomic function counts
+      each client across every server instance, and a test sends 60
+      simultaneous requests at a limit of 30 and expects exactly 30 through.
+    </p>
+    <p>
+      What remains: unit tests cover five modules, with no component or browser
+      tests, and that CI database runs on local images rather than the hosted
+      platform. The research graph can be driven by keyboard, but it was tested
+      in Chromium only, not with a screen reader.
     </p>
 
     <p class="provenance">
