@@ -94,7 +94,7 @@ const downloadUrl = 'https://github.com/VelaWind/vela-sea/releases/latest/downlo
     <h2>One trade-off</h2>
     <p>
       Collision avoidance does not run inside the fixed timestep. It runs once
-      per rendered frame, at <code>main.py</code> lines 2768 to 2779. Inside the
+      per rendered frame, at <code>main.py</code> lines 2357 to 2368. Inside the
       simulation loop it ran up to 375 times per frame, and that O(n²) pair scan
       repeated hundreds of times per frame was the crash at 3× speed, so it was
       lifted out of the loop.
@@ -130,18 +130,30 @@ const downloadUrl = 'https://github.com/VelaWind/vela-sea/releases/latest/downlo
       the game, so that check had been testing a copy of dead code, and the
       course-over-ground vector it exists to draw was never on the chart. It is
       drawn now, for the player and the followed vessel, whenever drift
-      exceeds half a degree. One duplicate is
-      left on purpose: the course-over-ground maths
-      and <code>Vessel.move()</code> still compute the same velocity separately,
-      and the verification script now runs a real <code>move()</code> step and
-      fails if the two disagree.
+      exceeds half a degree.
     </p>
     <p>
-      The structural one that remains: <code>main.py</code> is 3,570 lines, and the
-      search-and-rescue dispatch and the AI decision helpers are in it. The
-      layering rule holds by its letter, because <code>main.py</code> was never
-      in its scope, but that logic is simulation and it sits on the wrong side of
-      the line the rule was drawn to protect.
+      The structural problems were fixed next. <code>main.py</code> held the
+      search-and-rescue dispatch and the AI decision helpers: the layering rule
+      held by its letter, because <code>main.py</code> was never in its scope,
+      but that logic is simulation and sat on the wrong side of the line the
+      rule was drawn to protect. It now lives in <code>engine/sar.py</code>
+      and <code>engine/ai.py</code>, with the engine reporting event types and
+      <code>main.py</code> mapping them to colours, and <code>main.py</code> fell
+      from 3,570 to 3,159 lines. The course-over-ground arrow and
+      <code>Vessel.move()</code> now share one velocity function. A seeded
+      6,000-frame run is bit-identical before and after both changes, in vessel
+      state, every rendered frame and the event log, and changing one constant
+      by a billionth makes it differ from the first frame, so the check is not
+      blind. Vessel spawning and most of the per-step loop are still
+      in <code>main.py</code>.
+    </p>
+    <p>
+      Writing a test for the chart found an accuracy bug a sailor would spot:
+      the scale bar and range rings passed nautical miles to a function that
+      expects world units, so the bar labelled 50 nautical miles covered 7.5.
+      They now show true distances at every zoom, and the test fails on the old
+      code.
     </p>
     <p>
       Two others are fixed. <code>engine/rules.py</code> used to be a rules
