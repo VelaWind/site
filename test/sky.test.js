@@ -289,7 +289,12 @@ test('the name hot spot sits on the painted star, scrolled and at the viewport e
   await page.emulate({ width: 1440, height: 900 });
   await page.goto('/', 1500);
 
-  const box = skyBox(1440, 900);
+  // The canvas's own box, not the emulated viewport: on a system with classic
+  // scrollbars (a Linux CI runner, Windows) the fixed canvas stops at the
+  // scrollbar, so it is about 15px narrower than 1440, and a star placed from
+  // 1440 sits that far from where the page actually paints it.
+  const canvasBox = await page.json(`(() => { const r = document.querySelector('#sky').getBoundingClientRect(); return { w: r.width, h: r.height }; })()`);
+  const box = skyBox(canvasBox.w, canvasBox.h);
   const target = (id) => {
     for (const c of CONSTELLATIONS) {
       const s = c.stars.find((star) => star.id === id);
