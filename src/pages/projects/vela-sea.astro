@@ -28,6 +28,7 @@ const { html, sourceUrl } = await fetchCaseStudySection({
 
 const repoUrl = 'https://github.com/VelaWind/vela-sea';
 const liveUrl = 'https://velawind.github.io/vela-sea/';
+const downloadUrl = 'https://github.com/VelaWind/vela-sea/releases/latest/download/VelaSea-windows.zip';
 ---
 
 <Base
@@ -44,7 +45,7 @@ const liveUrl = 'https://velawind.github.io/vela-sea/';
       A maritime simulator whose simulation layer runs, and is tested, with no
       window open.
       <br />
-      <a href={liveUrl}>Web build</a> · <a href={repoUrl}>Source</a>
+      <a href={downloadUrl}>Windows download</a> · <a href={liveUrl}>Web demo</a> · <a href={repoUrl}>Source</a>
     </p>
 
     <CaseShot href="/projects/vela-sea" />
@@ -93,7 +94,7 @@ const liveUrl = 'https://velawind.github.io/vela-sea/';
     <h2>One trade-off</h2>
     <p>
       Collision avoidance does not run inside the fixed timestep. It runs once
-      per rendered frame, at <code>main.py</code> lines 2789 to 2800. Inside the
+      per rendered frame, at <code>main.py</code> lines 2784 to 2795. Inside the
       simulation loop it ran up to 375 times per frame, and that O(n²) pair scan
       repeated hundreds of times per frame was the crash at 3× speed, so it was
       lifted out of the loop.
@@ -111,22 +112,30 @@ const liveUrl = 'https://velawind.github.io/vela-sea/';
 
     <h2>What should change</h2>
     <p>
-      The least comfortable one first. <code>tools/verify/verify_cog_math.py</code> holds a
-      hand-copied body of the function at <code>render/chart.py</code> line 140,
-      described in its own docstring as an exact copy of that function so the
-      logic can be tested without importing Pygame. The two agree today,
-      checked line by line. Nothing keeps them agreeing. Two of the
-      avoidance tests do the same thing from the other
-      end: <code>tests/test_collision.py</code> line 70
-      and <code>tests/test_traffic.py</code> line 72 each re-implement the
-      steering step that the game itself runs at <code>main.py</code> line 2503,
-      so they pass against a loop the game does not execute. This is the same
+      The least comfortable one has been fixed, and fixing it found something
+      worse. Three checks tested hand-copied code instead of the game's own:
+      the course-over-ground check held a copy of a chart function so it could
+      run without Pygame, and two avoidance tests re-implemented the steering
+      step and the grounding rule from <code>main.py</code>. That is the same
       parallel-texts-drift failure the Lodestar case study is built on,
       reproduced under the same handle, after the argument had already been
-      made.
+      made. The steering step, the grounding rule and the course-over-ground
+      maths now live once, in <code>engine/navigation.py</code>, and the game,
+      the tests and the verification script call the same functions. A seeded
+      6,000-frame run gives identical vessel state and identical frames before
+      and after the move.
     </p>
     <p>
-      Then the two structural ones. <code>main.py</code> is 3,544 lines, and the
+      Moving the code showed that the copied chart function was never called by
+      the game, so that check had been testing a copy of dead code, and the
+      course-over-ground vector it exists to draw is not drawn. One duplicate is
+      left on purpose: the course-over-ground maths
+      and <code>Vessel.move()</code> still compute the same velocity separately,
+      and the verification script now runs a real <code>move()</code> step and
+      fails if the two disagree.
+    </p>
+    <p>
+      Then the two structural ones. <code>main.py</code> is 3,586 lines, and the
       search-and-rescue dispatch and the AI decision helpers are in it. The
       layering rule holds by its letter, because <code>main.py</code> was never
       in its scope, but that logic is simulation and it sits on the wrong side of
